@@ -1,0 +1,47 @@
+# The Measure of Teotihuacan
+
+**Live:** https://webgpu-demos.github.io/measure-of-teotihuacan/
+
+A research plan, told three ways from one storyboard: a narrated film, a step-by-step app that plays the film and stays in sync with it, and a written plan. The question is whether Teotihuacan's builders shared a standard unit of length, and how excavation CAD, lidar and AI could test it properly.
+
+| Output | Where |
+|---|---|
+| Step-by-step app | `docs/index.html` (served by GitHub Pages) |
+| Narrated film, 720p (5:31) | `docs/film.mp4` |
+| Narrated film, 1080p | the latest GitHub release |
+| Written plan | `PLAN.md` |
+
+## How it fits together
+
+`docs/story.js` is the single source of truth: chapter order, captions (which are also the narration script), the plan text in the app, and the shared lists. `docs/timing.js` holds cue times measured from the narration audio, so the film's captions and cuts and the app's step changes land on the same seconds.
+
+`docs/engine.js` is a deterministic three.js film engine: `renderAt(t)` draws the frame for any time `t`. The MP4 is rendered from it frame by frame in headless Chrome, and the app plays the same engine live, with the soundtrack from `docs/audio-v4/sound-*.mp3`. `docs/film.html` is the film on its own (`film.html?t=120` jumps; click for sound).
+
+`docs/quanto.js` is the cosine quantogram with a Monte Carlo noise threshold, shared by the film's Step 5 scene and the app's explorer.
+
+## Rebuild
+
+Needs Node, ffmpeg, Google Chrome and a Python with numpy and scipy.
+
+```bash
+cd render && npm install && cd ..
+python3 -I render/narration.py      # tighten narration clips in render/audio/, write docs/timing.js
+python3 -I render/soundtrack.py     # generated score + narration -> render/out/soundtrack.wav
+node render/render.mjs              # frames via system Chrome -> render/out/film-video.mp4 (~12 min)
+zsh render/finish.sh                # 1080p and 720p MP4s and the poster
+node render/build-plan.mjs          # PLAN.md
+```
+
+App soundtrack chunks: `ffmpeg -i render/out/soundtrack.wav -c:a libmp3lame -b:a 64k docs/audio-v4/soundtrack.mp3`, then `split -b 270000 -d -a 2 docs/audio-v4/soundtrack.mp3 docs/audio-v4/sound-` and add `.mp3` to each part (`AUDIO_PARTS` in `docs/index.html` must match the count).
+
+Local preview with seeking: `node render/serve.mjs 8732`, then open `http://127.0.0.1:8732/`.
+
+Pace: `SPEED` in `docs/story.js` compresses the timeline and `render/soundtrack.py` speeds the voice to match; `TEMPO`, `PAUSE_MAX` and `BREAK_LEN` in `render/narration.py` shape the narrator's own cadence.
+
+Narration was generated with ElevenLabs (library voice "Grant Gravitas", model `eleven_multilingual_v2`). To change a line, edit it in `docs/story.js`, regenerate that chapter's clip, save it as `render/audio/<chapter-id>.mp3`, and rerun the chain. `render/prompts.json` holds the exact text sent for each chapter.
+
+## Honesty notes
+
+- The 3D scenes are illustrations, not survey data. The real lidar and CAD stay with the excavation team under INAH rules.
+- Example measurements, file names and the quantogram data are synthetic.
+- Facts about the 2015 lidar survey come from "Humans as geomorphic agents: Lidar detection of the past, present and future of the Teotihuacan Valley, Mexico" (PLOS ONE, 2021). Other sources are listed in `PLAN.md` and in the app.

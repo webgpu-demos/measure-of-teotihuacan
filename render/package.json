@@ -1,0 +1,9 @@
+{
+  "name": "teotihuacan-film-render",
+  "private": true,
+  "type": "module",
+  "description": "Renders docs/film.html to an MP4, frame by frame.",
+  "dependencies": {
+    "puppeteer-core": "^23.11.1"
+  }
+}

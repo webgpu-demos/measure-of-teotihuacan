@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Measure of Teotihuacan · Film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<link rel="stylesheet" href="film.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script type="module">
+  import { createFilm } from './engine.js';
+  import { TIMELINE } from './story.js';
+
+  const stage = document.getElementById('stage');
+  const params = new URLSearchParams(location.search);
+  const fit = () => {
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transform = `translate(${(innerWidth - 1920 * s) / 2}px, ${(innerHeight - 1080 * s) / 2}px) scale(${s})`;
+  };
+  if (!params.has('render')) { fit(); addEventListener('resize', fit); }
+
+  await Promise.all(['800 40px Syne', '700 40px Syne', '500 40px "Hanken Grotesk"', '600 40px "Hanken Grotesk"', '500 20px "JetBrains Mono"', '700 20px "JetBrains Mono"']
+    .map((f) => document.fonts.load(f)));
+  const film = await createFilm(stage);
+  window.__film = film;
+  window.__duration = TIMELINE.duration;
+
+  if (!params.has('render')) {
+    // Live preview: plays the timeline in real time, with the soundtrack when present.
+    const audio = new Audio('film-audio.m4a');
+    let t0 = performance.now() - (Number(params.get('t')) || 0) * 1000;
+    const click = () => { audio.currentTime = (performance.now() - t0) / 1000; audio.play().catch(() => {}); removeEventListener('click', click); };
+    addEventListener('click', click);
+    const loop = () => {
+      const t = audio.paused ? (performance.now() - t0) / 1000 : audio.currentTime;
+      film.renderAt(t % TIMELINE.duration);
+      requestAnimationFrame(loop);
+    };
+    loop();
+  }
+  window.__ready = true;
+</script>
+</body>
+</html>

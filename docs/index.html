@@ -1,0 +1,950 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Measure of Teotihuacan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  /* Layout: film on top, a chapter rail locked to its timeline, then the active step in two columns (narration + plan | interactive). */
+  :root {
+    --bg: #eceee9;
+    --surface: #f9faf7;
+    --sunk: #e2e5df;
+    --ink: #14181a;
+    --muted: #59625e;
+    --line: #cfd4cd;
+    --jade: #0f7d63;
+    --ochre: #b8492a;
+    --steel: #3e6b8f;
+    --c1: #c4532f; --c2: #0f8a6c; --c3: #5b5bd6; --c4: #b0841a;
+    --display: 'Syne', 'Avenir Next', 'Helvetica Neue', sans-serif;
+    --body: 'Hanken Grotesk', 'Helvetica Neue', Arial, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    --r: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0e0f; --surface: #121718; --sunk: #191f20; --ink: #ece6d6; --muted: #a2aaa5; --line: #273031;
+      --jade: #3fbfa0; --ochre: #e0703f; --steel: #86a9c8;
+      --c1: #d0663a; --c2: #1f9a7a; --c3: #6f72e6; --c4: #b48c1a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0e0f; --surface: #121718; --sunk: #191f20; --ink: #ece6d6; --muted: #a2aaa5; --line: #273031;
+    --jade: #3fbfa0; --ochre: #e0703f; --steel: #86a9c8;
+    --c1: #d0663a; --c2: #1f9a7a; --c3: #6f72e6; --c4: #b48c1a;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 17px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  a { color: var(--jade); }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--jade); outline-offset: 2px; }
+  .mono { font-family: var(--mono); }
+  .eyebrow { font: 500 12.5px/1 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--jade); }
+
+  header.top { padding-block: 40px 22px; display: grid; gap: 12px; }
+  header.top h1 { margin: 0; font: 800 clamp(34px, 6vw, 64px)/0.98 var(--display); letter-spacing: -0.01em; text-wrap: balance; }
+  header.top p { margin: 0; max-width: 62ch; color: var(--muted); font-size: 18px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 500 13px/1.3 var(--mono); color: var(--muted); }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  .film { display: grid; gap: 12px; }
+  .player { position: relative; border-radius: var(--r); overflow: hidden; background: #000; aspect-ratio: 16 / 9; max-width: 100%; box-shadow: 0 1px 0 var(--line); }
+  .filmhost { position: absolute; inset: 0; }
+  .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bigplay { position: absolute; left: 50%; top: 50%; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%; border: 2px solid rgba(236,230,214,0.85); background: rgba(8,10,11,0.55); color: #ece6d6; font-size: 30px; cursor: pointer; backdrop-filter: blur(4px); }
+  .bigplay:hover { background: rgba(8,10,11,0.75); }
+  .loading { position: absolute; left: 16px; bottom: 14px; font: 600 12.5px/1 var(--mono); color: #ece6d6; background: rgba(8,10,11,0.7); padding: 7px 10px; border-radius: 5px; }
+  .player:fullscreen { border-radius: 0; display: grid; place-items: center; }
+  .cbar { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
+  .cbar .t { font: 600 13px/1 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cbar input[type=range] { width: 100%; accent-color: var(--jade); }
+  @media (max-width: 560px) { .cbar { grid-template-columns: auto minmax(0, 1fr) auto; } .cbar .opt { display: none; } }
+  .rail-wrap { overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px; }
+  .rail { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 900px; }
+  .rail button { width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 8px 9px 10px; cursor: pointer; display: grid; gap: 4px; position: relative; overflow: hidden; }
+  .rail button .n { font: 500 11px/1 var(--mono); color: var(--muted); letter-spacing: 0.06em; }
+  .rail button .l { font: 600 13px/1.2 var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rail button .fill { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: var(--muted); opacity: 0.55; }
+  .rail button[aria-current="step"] { border-color: var(--jade); background: color-mix(in srgb, var(--jade) 9%, var(--surface)); }
+  .rail button[aria-current="step"] .fill { background: var(--jade); opacity: 1; }
+  .rail button:hover { border-color: var(--muted); }
+  .syncbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; font: 500 13px/1.3 var(--mono); color: var(--muted); }
+  .syncbar .now b { color: var(--ink); }
+
+  section.step { margin-top: 26px; border-top: 1px solid var(--line); padding-block: 26px 10px; }
+  .step-head { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: end; justify-content: space-between; }
+  .step-head h2 { margin: 6px 0 0; font: 700 clamp(26px, 4vw, 40px)/1.05 var(--display); text-wrap: balance; }
+  .nav { display: flex; gap: 8px; }
+  .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 14px; cursor: pointer; font: 600 14px/1 var(--body); display: inline-flex; gap: 8px; align-items: center; }
+  .btn:hover { border-color: var(--muted); }
+  .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .btn[disabled] { opacity: 0.4; cursor: default; }
+  .step-body { margin-top: 22px; display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 980px) { .step-body { grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); } }
+  .col { min-width: 0; display: grid; gap: 18px; align-content: start; }
+
+  .narration { margin: 0; padding: 16px 18px; border-left: 3px solid var(--ochre); background: var(--sunk); border-radius: 0 var(--r) var(--r) 0; display: grid; gap: 6px; }
+  .narration .lab { font: 500 11.5px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .narration p { margin: 0; font-size: 17.5px; line-height: 1.45; color: var(--muted); transition: color .2s; cursor: pointer; }
+  .narration p.on { color: var(--ink); }
+  .narration p.on::before { content: "▸ "; color: var(--ochre); }
+  .summary { margin: 0; font-size: 18px; }
+  .col h3 { margin: 0; font: 500 12.5px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .points { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
+  .points li::marker { color: var(--jade); }
+  .who { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 500 12.5px/1 var(--mono); color: var(--muted); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 12.5px/1 var(--mono); letter-spacing: 0.02em; }
+  .chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--jade); }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; }
+  .panel > .ptitle { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 14px; }
+  .panel > .ptitle b { font: 700 16px/1.2 var(--body); }
+  .panel > .ptitle span { font: 500 11.5px/1.2 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .tiles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .tile { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--bg); }
+  .tile b { display: block; font: 700 30px/1 var(--display); }
+  .tile span { display: block; margin-top: 8px; color: var(--muted); font-size: 14.5px; line-height: 1.35; }
+  .note { font: 400 12.5px/1.45 var(--mono); color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 500 11.5px/1.2 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  td.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  .hyp-list { display: grid; gap: 8px; }
+  .hyp { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 4px 14px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+  .hyp b { font: 700 22px/1.1 var(--display); grid-row: span 2; }
+  .hyp em { font: 500 11.5px/1.2 var(--mono); font-style: normal; color: var(--jade); letter-spacing: 0.08em; text-transform: uppercase; }
+  .hyp span { font-size: 14.5px; color: var(--muted); }
+  svg text { font-family: var(--mono); }
+
+  .flow { display: grid; gap: 8px; }
+  .flow .s { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .flow .s i { font: 700 12px/26px var(--mono); font-style: normal; width: 26px; height: 26px; border-radius: 50%; text-align: center; background: var(--sunk); color: var(--ink); }
+  .flow .s b { display: block; font-weight: 700; }
+  .flow .s span { color: var(--muted); font-size: 14.5px; }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button { border: 0; background: transparent; padding: 7px 10px; font: 600 12.5px/1 var(--mono); cursor: pointer; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .tagbtn { border: 1px solid var(--line); background: transparent; border-radius: 5px; padding: 4px 7px; font: 700 11px/1 var(--mono); letter-spacing: 0.04em; cursor: pointer; color: var(--muted); }
+  .tagbtn[aria-pressed="true"].original { background: var(--jade); border-color: var(--jade); color: var(--bg); }
+  .tagbtn[aria-pressed="true"].restored { background: var(--ochre); border-color: var(--ochre); color: var(--bg); }
+  .tagbtn[aria-pressed="true"].eroded { background: var(--muted); border-color: var(--muted); color: var(--bg); }
+  .blind td.val { filter: blur(6px); user-select: none; }
+  .stamp { display: inline-block; border: 3px solid var(--ochre); color: var(--ochre); border-radius: 6px; padding: 8px 12px; font: 800 18px/1 var(--display); letter-spacing: 0.08em; transform: rotate(-3deg); }
+  .stamp small { display: block; margin-top: 6px; font: 500 11px/1.2 var(--mono); letter-spacing: 0.04em; color: var(--ink); }
+  .row-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .switch { display: inline-flex; gap: 8px; align-items: center; font: 600 13px/1 var(--mono); cursor: pointer; }
+  .switch input { width: 18px; height: 18px; accent-color: var(--jade); }
+  select { font: 600 12.5px/1 var(--mono); padding: 4px 6px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+
+  .panel { container-type: inline-size; }
+  .qgrid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  .qside { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); align-items: center; }
+  @container (min-width: 520px) { .qside { grid-template-columns: 170px minmax(0, 1fr); } }
+  .controls { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 14px; }
+  .ctl { display: grid; gap: 6px; font: 500 12px/1.2 var(--mono); color: var(--muted); }
+  .ctl output { color: var(--ink); font-weight: 700; }
+  .ctl input[type=range] { width: 100%; accent-color: var(--jade); }
+  .verdict { margin: 0; padding: 12px 14px; border-radius: 8px; background: var(--sunk); font-size: 15px; }
+  .verdict b { font-family: var(--mono); }
+  .chart { width: 100%; height: auto; display: block; touch-action: none; }
+  .tip { font: 600 12px/1 var(--mono); }
+
+  .sk { display: grid; gap: 8px; }
+  .sk details { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 10px 12px; }
+  .sk summary { cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: baseline; list-style: none; }
+  .sk summary::-webkit-details-marker { display: none; }
+  .sk summary b { font-weight: 700; }
+  .sk summary span { font: 600 12px/1.3 var(--mono); color: var(--jade); text-align: right; }
+  .sk p { margin: 8px 0 0; color: var(--muted); font-size: 14.5px; }
+  .cards { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .card { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 14px; display: grid; gap: 6px; align-content: start; }
+  .card em { font: 600 11.5px/1 var(--mono); font-style: normal; letter-spacing: 0.12em; text-transform: uppercase; color: var(--jade); }
+  .card b { font: 700 19px/1.15 var(--display); }
+  .card span { color: var(--muted); font-size: 14.5px; }
+  .two { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 12px; }
+  .two ul { margin: 6px 0 0; padding-left: 18px; font-size: 14.5px; }
+  .weeks { display: grid; gap: 8px; }
+  .week { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; align-items: center; }
+  .week em { font: 700 12.5px/1 var(--mono); font-style: normal; color: var(--jade); }
+  .week div { border: 1px solid var(--line); border-left: 3px solid var(--ochre); border-radius: 6px; padding: 9px 12px; background: var(--bg); font-weight: 600; }
+  .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .checks label { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; cursor: pointer; font-size: 15px; }
+  .checks input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--jade); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font: 500 12.5px/1 var(--mono); color: var(--muted); margin-top: 10px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
+
+  .sorter { display: grid; gap: 8px; }
+  .sorter .item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+  .sorter .item b { font-weight: 600; }
+  .sorter .item small { display: block; color: var(--muted); font-size: 13.5px; }
+  .verdict-chip { font: 700 11.5px/1 var(--mono); letter-spacing: 0.08em; padding: 6px 8px; border-radius: 4px; text-transform: uppercase; white-space: nowrap; }
+  .verdict-chip.ok { background: var(--jade); color: var(--bg); }
+  .verdict-chip.no { background: var(--ochre); color: var(--bg); }
+  .verdict-chip.wait { border: 1px solid var(--line); color: var(--muted); }
+  .stagebar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .stagebar button { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 7px 10px; font: 600 12.5px/1 var(--mono); cursor: pointer; color: var(--muted); }
+  .stagebar button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .stagecard { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--bg); display: grid; gap: 8px; }
+  .stagecard .io { display: flex; flex-wrap: wrap; gap: 8px; font: 500 12.5px/1.3 var(--mono); }
+  .stagecard .io span { padding: 5px 8px; border-radius: 4px; background: var(--sunk); }
+  .stagecard p { margin: 0; font-size: 15px; }
+  .stagecard .tool { font: 500 12.5px/1.4 var(--mono); color: var(--muted); }
+  .jobs { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .job { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 14px; display: grid; gap: 8px; align-content: start; }
+  .job em { font: 600 11.5px/1 var(--mono); font-style: normal; letter-spacing: 0.12em; text-transform: uppercase; color: var(--jade); }
+  .job b { font: 700 18px/1.15 var(--display); }
+  .job ul { margin: 0; padding-left: 16px; font-size: 14px; display: grid; gap: 4px; }
+  .job .check { font: 500 12.5px/1.35 var(--mono); color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; }
+  .gate { display: grid; gap: 8px; }
+  .gate .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+  .gate .row small { display: block; color: var(--muted); font: 500 12px/1.3 var(--mono); }
+  .gate .btns { display: flex; gap: 6px; }
+  footer { margin-top: 40px; border-top: 1px solid var(--line); padding-block: 24px 48px; display: grid; gap: 18px; }
+  footer ol { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14.5px; }
+  footer ol span { color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">A research plan · archaeology × lidar × AI</div>
+    <h1 id="h1">The Measure of Teotihuacan</h1>
+    <p id="sub"></p>
+    <div class="meta"><span><b id="mins"></b> film</span><span><b id="nsteps"></b> chapters</span><span>Film, walkthrough and written plan share one storyboard</span></div>
+  </header>
+
+  <section class="film" aria-label="Film">
+    <div class="player" id="player">
+      <img class="poster" id="poster" src="poster.jpg" alt="Title card: The Measure of Teotihuacan">
+      <div class="filmhost" id="filmhost"></div>
+      <button class="bigplay" id="bigplay" type="button" aria-label="Play the film">▶</button>
+      <div class="loading" id="loading" hidden></div>
+    </div>
+    <div class="cbar">
+      <button class="btn" id="pp" type="button">Play</button>
+      <span class="t" id="clock">0:00 / 0:00</span>
+      <input type="range" id="scrub" min="0" max="1" step="0.1" value="0" aria-label="Film position">
+      <button class="btn opt" id="mute" type="button" aria-pressed="false">Sound on</button>
+      <button class="btn" id="fs" type="button" aria-label="Full screen">⤢</button>
+    </div>
+    <div class="syncbar"><span class="now" id="now"></span><span>The film plays live from the engine that rendered the MP4. Click a step to jump the film; play the film to move the steps.</span></div>
+    <div class="rail-wrap"><ol class="rail" id="rail"></ol></div>
+  </section>
+
+  <section class="step" id="step" aria-live="polite">
+    <div class="step-head">
+      <div><div class="eyebrow" id="kicker"></div><h2 id="title"></h2></div>
+      <div class="nav">
+        <button class="btn" id="prev" aria-label="Previous step">← Prev</button>
+        <button class="btn primary" id="play">Play this step</button>
+        <button class="btn" id="next" aria-label="Next step">Next →</button>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="col">
+        <div class="narration" id="narration"></div>
+        <p class="summary" id="summary"></p>
+        <h3>In practice</h3>
+        <ul class="points" id="points"></ul>
+        <div class="who" id="who"></div>
+      </div>
+      <div class="col" id="widget"></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="eyebrow">Sources</div>
+    <ol id="sources"></ol>
+    <p class="note">Scenes in the film are illustrations, not survey data. Example measurements and the quantogram data are synthetic. The plan's timings are estimates for part-time work.</p>
+  </footer>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import { CHAPTERS, TIMELINE, SUBTITLE, SOURCES, FIRST_CALL_QUESTIONS, STATS, GROUND, HYPOTHESES, EXAMPLE_RECORDS, LAYERS, SKEPTICS, ROLES, OUTCOMES, WEEKS } from './story.js';
+import { synth, grid, scan, threshold, peak, valueAt } from './quanto.js';
+
+const $ = (s, r = document) => r.querySelector(s);
+const h = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') e.className = v; else if (k === 'html') e.innerHTML = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(k));
+  return e;
+};
+const SVG = 'http://www.w3.org/2000/svg';
+const s = (tag, attrs = {}) => { const e = document.createElementNS(SVG, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+
+$('#sub').textContent = SUBTITLE;
+const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+$('#mins').textContent = fmt(TIMELINE.duration);
+$('#nsteps').textContent = CHAPTERS.length;
+
+// ---------------------------------------------------------------- the film
+// The film plays live from engine.js, the same code that rendered the MP4, with
+// the soundtrack through WebAudio. FilmPlayer offers the slice of the media
+// element API the step sync needs: currentTime, paused, play(), pause(), events.
+const AUDIO_PARTS = 10;
+const setLoading = (msg) => { const el = $('#loading'); el.textContent = msg; el.hidden = !msg; };
+let resolveReady;
+const filmReady = new Promise((r) => (resolveReady = r));
+
+class FilmPlayer extends EventTarget {
+  constructor(duration) {
+    super();
+    this.duration = duration; this.paused = true; this.seeking = false; this.muted = false;
+    this._t = 0; this._t0 = 0; this.film = null; this.ctx = null; this.buf = null; this.src = null; this.gain = null; this.audioFailed = false;
+    this.bytes = Promise.all(Array.from({ length: AUDIO_PARTS }, (_, i) => fetch(`audio-v4/sound-${String(i).padStart(2, '0')}.mp3`).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.arrayBuffer(); })))
+      .then((parts) => {
+        const out = new Uint8Array(parts.reduce((a, b) => a + b.byteLength, 0));
+        let o = 0;
+        for (const b of parts) { out.set(new Uint8Array(b), o); o += b.byteLength; }
+        return out.buffer;
+      })
+      .catch(() => null);
+  }
+  now() { return this.ctx ? this.ctx.currentTime : performance.now() / 1000; }
+  get currentTime() { return this.paused ? this._t : Math.min(this.duration, this._t + (this.now() - this._t0)); }
+  set currentTime(v) {
+    const playing = !this.paused;
+    if (playing) this.stopAudio();
+    this._t = Math.max(0, Math.min(this.duration, Number(v) || 0));
+    this._t0 = this.now();
+    if (playing) this.startAudio();
+    this.draw();
+    this.dispatchEvent(new Event('seeked'));
+  }
+  async loadAudio() {
+    if (this.buf || this.audioFailed) return;
+    try {
+      const bytes = await this.bytes;
+      if (!bytes) throw new Error('missing');
+      this.buf = await this.ctx.decodeAudioData(bytes.slice(0));
+      this.gain = this.ctx.createGain();
+      this.gain.gain.value = this.muted ? 0 : 1;
+      this.gain.connect(this.ctx.destination);
+    } catch { this.audioFailed = true; $('#mute').textContent = 'No sound'; }
+  }
+  startAudio() {
+    if (!this.buf) return;
+    this.src = this.ctx.createBufferSource();
+    this.src.buffer = this.buf;
+    this.src.connect(this.gain);
+    this.src.start(0, Math.min(this._t, this.buf.duration - 0.01));
+  }
+  stopAudio() { try { this.src?.stop(); } catch {} this.src = null; }
+  async play() {
+    if (!this.paused || this.starting) return;
+    this.starting = true;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!this.ctx && AC) { this.ctx = new AC(); }
+      await this.ctx?.resume();
+    } catch { this.ctx = null; }
+    if (!this.film || (this.ctx && !this.buf && !this.audioFailed)) setLoading('Loading the film…');
+    if (this.ctx) await Promise.race([this.loadAudio(), new Promise((r) => setTimeout(r, 12000))]);
+    await filmReady;
+    setLoading('');
+    this.starting = false;
+    if (this._t >= this.duration - 0.05) this._t = 0;
+    this._t0 = this.now();
+    this.paused = false;
+    this.startAudio();
+    this.dispatchEvent(new Event('play'));
+    let last = 0;
+    const step = (ts) => {
+      if (this.paused) return;
+      if (this.currentTime >= this.duration - 0.02) { this.pause(); return; }
+      this.draw();
+      if (ts - last > 240) { last = ts; this.dispatchEvent(new Event('timeupdate')); }
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  pause() {
+    if (this.paused) return;
+    this._t = this.currentTime;
+    this.paused = true;
+    this.stopAudio();
+    this.draw();
+    this.dispatchEvent(new Event('pause'));
+  }
+  setMuted(m) { this.muted = m; if (this.gain) this.gain.gain.value = m ? 0 : 1; }
+  draw() { this.film?.renderAt(this.currentTime); }
+}
+const player = new FilmPlayer(TIMELINE.duration);
+
+async function startFilm() {
+  try {
+    const host = $('#filmhost');
+    const root = host.attachShadow({ mode: 'open' });
+    const style = document.createElement('style');
+    style.textContent = await fetch('film.css').then((r) => r.text());
+    const stage = document.createElement('div');
+    stage.id = 'stage';
+    root.append(style, stage);
+    const fit = () => { stage.style.transform = `scale(${host.clientWidth / 1920})`; };
+    new ResizeObserver(fit).observe(host);
+    fit();
+    await Promise.all(['800 40px Syne', '700 40px Syne', '500 40px "Hanken Grotesk"', '500 20px "JetBrains Mono"', '700 20px "JetBrains Mono"'].map((f) => document.fonts.load(f)));
+    const { createFilm } = await import('./engine.js');
+    const pixelRatio = Math.min(1, Math.max(0.5, (host.clientWidth * (window.devicePixelRatio || 1)) / 1920));
+    player.film = await createFilm(stage, { pixelRatio });
+    player.draw();
+    player.dispatchEvent(new Event('loadedmetadata'));
+  } catch {
+    setLoading('The live film needs WebGL, which this browser did not provide. The steps below still work.');
+  }
+  resolveReady();
+}
+(window.requestIdleCallback || ((f) => setTimeout(f, 200)))(startFilm);
+
+const scrub = $('#scrub');
+scrub.max = TIMELINE.duration.toFixed(1);
+let scrubbing = false;
+scrub.addEventListener('pointerdown', () => (scrubbing = true));
+scrub.addEventListener('pointerup', () => (scrubbing = false));
+scrub.addEventListener('input', () => { player.currentTime = Number(scrub.value); });
+$('#pp').onclick = () => (player.paused ? player.play() : player.pause());
+$('#bigplay').onclick = () => player.play();
+$('#mute').onclick = (e) => {
+  if (player.audioFailed) return;
+  player.setMuted(!player.muted);
+  e.currentTarget.textContent = player.muted ? 'Sound off' : 'Sound on';
+  e.currentTarget.setAttribute('aria-pressed', String(player.muted));
+};
+$('#fs').onclick = () => {
+  const p = $('#player');
+  const req = document.fullscreenElement ? document.exitFullscreen?.() : p.requestFullscreen?.();
+  req?.catch?.(() => {});
+};
+
+// ---------------------------------------------------------------- rail
+const rail = $('#rail');
+rail.style.gridTemplateColumns = TIMELINE.chapters.map((c) => `${Math.max(1, c.dur).toFixed(1)}fr`).join(' ');
+const railBtns = CHAPTERS.map((ch, i) => {
+  const b = h('button', { type: 'button', onclick: () => go(i, true) },
+    h('span', { class: 'n' }, `${String(i + 1).padStart(2, '0')} · ${fmt(TIMELINE.chapters[i].start)}`),
+    h('span', { class: 'l' }, ch.label),
+    h('span', { class: 'fill' }));
+  rail.append(h('li', {}, b));
+  return b;
+});
+
+// ---------------------------------------------------------------- steps
+let current = -1;
+let lineEls = [];
+
+function go(i, seek) {
+  i = Math.max(0, Math.min(CHAPTERS.length - 1, i));
+  if (seek) {
+    player.currentTime = TIMELINE.chapters[i].start + 0.05;
+  }
+  if (i !== current) render(i);
+}
+
+function render(i) {
+  current = i;
+  const ch = CHAPTERS[i], tc = TIMELINE.chapters[i];
+  railBtns.forEach((b, j) => (j === i ? b.setAttribute('aria-current', 'step') : b.removeAttribute('aria-current')));
+  const wrap = rail.parentElement, btn = railBtns[i];
+  if (wrap.scrollWidth > wrap.clientWidth) wrap.scrollLeft = btn.offsetLeft - wrap.clientWidth / 2 + btn.clientWidth / 2;
+  $('#kicker').textContent = `${String(i + 1).padStart(2, '0')} / ${CHAPTERS.length} · ${ch.kicker}`;
+  $('#title').textContent = ch.title;
+  const nar = $('#narration');
+  nar.replaceChildren(h('div', { class: 'lab' }, `Narration · ${fmt(tc.start)}–${fmt(tc.end)}`));
+  lineEls = tc.cues.map((c) => {
+    const p = h('p', { title: 'Play from this line', onclick: () => { player.currentTime = tc.start + c.at; player.play().catch(() => {}); } }, c.text);
+    nar.append(p);
+    return p;
+  });
+  $('#summary').textContent = ch.app.summary;
+  $('#points').replaceChildren(...ch.app.points.map((p) => h('li', {}, p)));
+  const who = $('#who');
+  who.replaceChildren();
+  if (ch.app.who) who.append('Who: ', ...ch.app.who.map((w) => h('span', { class: 'chip' }, h('i'), w)));
+  $('#widget').replaceChildren(WIDGETS[ch.app.widget]());
+  $('#prev').disabled = i === 0;
+  $('#next').disabled = i === CHAPTERS.length - 1;
+  try { history.replaceState(null, '', `#${ch.id}`); } catch {}
+  store.set('mot-step', i);
+}
+
+$('#prev').onclick = () => go(current - 1, true);
+$('#next').onclick = () => go(current + 1, true);
+$('#play').onclick = () => {
+  const tc = TIMELINE.chapters[current];
+  if (player.paused) {
+    if (player.currentTime < tc.start || player.currentTime >= tc.end - 0.2) player.currentTime = tc.start + 0.05;
+    player.play().catch(() => {});
+  } else player.pause();
+};
+addEventListener('keydown', (e) => {
+  if (e.target.closest('input, select, textarea, button')) return;
+  if (e.key === 'ArrowRight') go(current + 1, true);
+  if (e.key === 'ArrowLeft') go(current - 1, true);
+});
+
+// ---------------------------------------------------------------- sync loop
+function tick() {
+  const t = player.currentTime || 0;
+  let idx = 0;
+  for (let j = TIMELINE.chapters.length - 1; j >= 0; j--) if (t >= TIMELINE.chapters[j].start) { idx = j; break; }
+  if (idx !== current && (!player.paused || player.seeking || t > 0)) render(idx);
+  TIMELINE.chapters.forEach((c, j) => { railBtns[j].querySelector('.fill').style.width = `${Math.max(0, Math.min(1, (t - c.start) / c.dur)) * 100}%`; });
+  const tc = TIMELINE.chapters[current];
+  tc.cues.forEach((c, k) => {
+    const end = k + 1 < tc.cues.length ? tc.cues[k + 1].at : tc.dur;
+    lineEls[k]?.classList.toggle('on', t >= tc.start + c.at - 0.1 && t < tc.start + end && idx === current);
+  });
+  $('#now').innerHTML = `<b>${fmt(t)}</b> / ${fmt(TIMELINE.duration)} · step ${current + 1}: ${CHAPTERS[current].label}`;
+  $('#play').textContent = player.paused ? 'Play this step' : 'Pause';
+  $('#pp').textContent = player.paused ? 'Play' : 'Pause';
+  $('#clock').textContent = `${fmt(t)} / ${fmt(TIMELINE.duration)}`;
+  if (!scrubbing) scrub.value = t.toFixed(1);
+  $('#bigplay').hidden = !player.paused;
+  $('#poster').hidden = !!player.film && !(player.paused && t < 0.3);
+}
+// One animation loop while playing; media events update directly.
+let looping = false;
+function loop() { tick(); if (!player.paused) requestAnimationFrame(loop); else looping = false; }
+function kick() { tick(); if (!player.paused && !looping) { looping = true; requestAnimationFrame(loop); } }
+for (const ev of ['timeupdate', 'seeked', 'play', 'pause', 'loadedmetadata']) player.addEventListener(ev, kick);
+
+// ---------------------------------------------------------------- widgets
+const panel = (title, tag, ...kids) => h('div', { class: 'panel' }, h('div', { class: 'ptitle' }, h('b', {}, title), h('span', {}, tag || '')), ...kids);
+
+const WIDGETS = {
+  facts() {
+    const svgEl = s('svg', { viewBox: '-110 -110 220 220', width: '180', height: '180', role: 'img', 'aria-label': 'Compass showing the city axis 15.5 degrees east of true north' });
+    svgEl.append(s('circle', { r: 96, fill: 'none', stroke: 'var(--line)', 'stroke-width': 2 }));
+    svgEl.append(s('line', { x1: 0, y1: 80, x2: 0, y2: -92, stroke: 'var(--muted)', 'stroke-width': 2, 'stroke-dasharray': '6 5' }));
+    const g = s('g', { transform: 'rotate(15.5)' });
+    g.append(s('line', { x1: 0, y1: 80, x2: 0, y2: -92, stroke: 'var(--jade)', 'stroke-width': 4 }), s('path', { d: 'M0 -100 L-8 -84 L8 -84 Z', fill: 'var(--jade)' }));
+    svgEl.append(g);
+    const arc = s('path', { d: `M0 -60 A60 60 0 0 1 ${(60 * Math.sin(15.5 * Math.PI / 180)).toFixed(2)} ${(-60 * Math.cos(15.5 * Math.PI / 180)).toFixed(2)}`, fill: 'none', stroke: 'var(--ochre)', 'stroke-width': 3 });
+    svgEl.append(arc);
+    const t1 = s('text', { x: -8, y: -98, 'text-anchor': 'end', fill: 'var(--muted)', 'font-size': 12 }); t1.textContent = 'N';
+    const t2 = s('text', { x: 22, y: -42, fill: 'var(--ochre)', 'font-size': 14, 'font-weight': 700 }); t2.textContent = '15.5°';
+    svgEl.append(t1, t2);
+    return panel('A city on one grid', 'key facts',
+      h('div', { style: 'display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));align-items:center' },
+        h('div', { class: 'tiles', style: 'grid-template-columns:1fr' },
+          h('div', { class: 'tile' }, h('b', {}, '≈20 km²'), h('span', {}, 'core city')),
+          h('div', { class: 'tile' }, h('b', {}, '≈100,000'), h('span', {}, 'people at its height')),
+          h('div', { class: 'tile' }, h('b', {}, '15.5°'), h('span', {}, 'east of astronomical north, shared by streets, pyramids and housing'))),
+        h('div', { style: 'display:grid;place-items:center' }, svgEl)));
+  },
+
+  ground() {
+    const cols = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)'];
+    const W = 600, H = 78;
+    const svgEl = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': 'Ground classification of the lidar map: 60% modern-made, 22% ancient, 3% mixed, 15% natural' });
+    let x = 0;
+    GROUND.forEach((g, i) => {
+      const w = (g.pct / 100) * W;
+      const r = s('rect', { x: x + (i ? 1 : 0), y: 6, width: Math.max(1, w - (i ? 2 : 0) - (i === GROUND.length - 1 ? 0 : 1)), height: 40, rx: 4, fill: cols[i] });
+      const ttl = s('title'); ttl.textContent = `${g.label}: ${g.pct}%`; r.append(ttl);
+      svgEl.append(r);
+      if (g.pct >= 10) { const t = s('text', { x: x + 10, y: 66, fill: 'var(--ink)', 'font-size': 13, 'font-weight': 600 }); t.textContent = `${g.label} ${g.pct}%`; svgEl.append(t); }
+      x += w;
+    });
+    const legend = h('div', { class: 'legend' }, ...GROUND.map((g, i) => h('span', {}, h('i', { style: `background:${cols[i]}` }), `${g.label} · ${g.pct}%`)));
+    return h('div', { class: 'col' },
+      panel('What the lidar sees', 'ground classes', svgEl, legend,
+        h('p', { class: 'note', style: 'margin:10px 0 0' }, 'Share of the 2015 lidar map by ground class, from the 2021 PLOS ONE study.')),
+      h('div', { class: 'tiles' }, ...STATS.map(([b, t]) => h('div', { class: 'tile' }, h('b', {}, b), h('span', {}, t)))));
+  },
+
+  hypotheses() {
+    const W = 600, H = 120, X0 = 30, X1 = 580, max = 10;
+    const px = (m) => X0 + (m / max) * (X1 - X0);
+    const svgEl = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': 'Multiples of 83 cm and 80.5 cm drift apart with length' });
+    for (let m = 0; m <= max; m += 2) {
+      svgEl.append(s('line', { x1: px(m), x2: px(m), y1: 14, y2: 92, stroke: 'var(--line)' }));
+      const t = s('text', { x: px(m), y: 110, 'text-anchor': 'middle', fill: 'var(--muted)', 'font-size': 12.5 }); t.textContent = `${m} m`; svgEl.append(t);
+    }
+    const rows = [[0.83, 32, 'var(--ochre)', '83 cm'], [0.805, 70, 'var(--steel)', '80.5 cm']];
+    for (const [u, y, c, lab] of rows) {
+      for (let k = 1; k * u <= max; k++) svgEl.append(s('line', { x1: px(k * u), x2: px(k * u), y1: y - 9, y2: y + 9, stroke: c, 'stroke-width': 2 }));
+      const t = s('text', { x: X0 - 4, y: y + 4, 'text-anchor': 'end', fill: c, 'font-size': 12.5, 'font-weight': 700 }); t.textContent = lab.split(' ')[0]; svgEl.append(t);
+    }
+    return h('div', { class: 'col' },
+      panel('Named hypotheses', 'fixed before the test', h('div', { class: 'hyp-list' }, ...HYPOTHESES.map((x) => h('div', { class: 'hyp' }, h('b', {}, x.label), h('em', {}, x.note), h('span', {}, x.detail))))),
+      panel('Why 83 and 80.5 can be told apart', 'multiples drift', svgEl,
+        h('p', { class: 'note', style: 'margin:8px 0 0' }, 'Ten units of each differ by 25 cm, far above centimeter-level survey error. Longer dimensions separate them; shorter ones carry less layout error. The power analysis in weeks 1–2 sets the balance.')));
+  },
+
+  pipeline() {
+    const steps = [
+      ['AutoCAD drawing (DWG)', 'The excavation team’s 3D plans, as they are.'],
+      ['ODA File Converter → DXF', 'Free converter; nothing is redrawn.'],
+      ['ezdxf in Python', 'Read lines, polylines, 3D faces and meshes, with their layers and entity handles.'],
+      ['Rotate to the city grid', 'Turn every drawing 15.5° so length and width mean the same thing everywhere.'],
+      ['Layer → element type', 'Claude proposes a mapping from layer names; the archaeologist confirms it.'],
+    ];
+    return h('div', { class: 'col' },
+      panel('Reading the drawings', 'pipeline', h('div', { class: 'flow' }, ...steps.map(([b, t], i) => h('div', { class: 's' }, h('i', {}, String(i + 1)), h('div', {}, h('b', {}, b), h('span', {}, t)))))),
+      panel('Layer mapping', 'example', h('div', { class: 'scroll' }, h('table', {},
+        h('thead', {}, h('tr', {}, h('th', {}, 'Layer'), h('th', {}, 'Element'), h('th', {}, 'Status'))),
+        h('tbody', {}, ...LAYERS.map(([l, e], i) => h('tr', {}, h('td', { class: 'mono' }, l), h('td', {}, e), h('td', { class: 'mono', style: `color:${i < 4 ? 'var(--jade)' : 'var(--muted)'}` }, i < 4 ? 'confirmed' : 'proposed'))))))));
+  },
+
+  records() {
+    return panel('measurements.csv', 'example rows', h('div', { class: 'scroll' }, h('table', {},
+      h('thead', {}, h('tr', {}, h('th', {}, 'ID'), h('th', {}, 'Dimension'), h('th', { style: 'text-align:right' }, 'Length'), h('th', {}, 'Layer'), h('th', {}, 'Handle'))),
+      h('tbody', {}, ...EXAMPLE_RECORDS.map((r) => h('tr', {}, h('td', { class: 'mono' }, r.id), h('td', {}, r.type), h('td', { class: 'num' }, `${r.value.toFixed(2)} m`), h('td', { class: 'mono' }, r.layer), h('td', { class: 'mono' }, r.handle)))))),
+      h('p', { class: 'note', style: 'margin:10px 0 0' }, 'Same rows as the film. Values are illustrative; each real row will link back to the drawing, layer and entity it came from.'));
+  },
+
+  curate() {
+    const saved = store.get('mot-curate');
+    const state = EXAMPLE_RECORDS.map((r, i) => ({ tag: saved?.[i]?.tag || r.tag, phase: saved?.[i]?.phase || r.phase }));
+    let frozen = null;
+    const tbody = h('tbody');
+    const table = h('table', { class: 'blind' }, h('thead', {}, h('tr', {}, h('th', {}, 'ID'), h('th', {}, 'Dimension'), h('th', { style: 'text-align:right' }, 'Length'), h('th', {}, 'Condition'), h('th', {}, 'Phase'))), tbody);
+    const status = h('div', { class: 'note' });
+    const persist = () => { store.set('mot-curate', state); if (frozen) { status.textContent = 'Changed since the freeze. A real pre-registration would need a new, dated version.'; status.style.color = 'var(--ochre)'; } };
+    EXAMPLE_RECORDS.forEach((r, i) => {
+      const tags = ['original', 'restored', 'eroded'].map((t) => {
+        const b = h('button', { type: 'button', class: `tagbtn ${t}`, 'aria-pressed': String(state[i].tag === t), onclick: () => { state[i].tag = t; tags.forEach((x) => x.setAttribute('aria-pressed', String(x.classList.contains(t)))); persist(); } }, t.slice(0, 4).toUpperCase());
+        return b;
+      });
+      const sel = h('select', { 'aria-label': `Phase for ${r.type}`, onchange: (e) => { state[i].phase = Number(e.target.value); persist(); } }, ...[1, 2, 3, 4].map((p) => { const o = h('option', { value: p }, `Ph ${p}`); if (p === state[i].phase) o.selected = true; return o; }));
+      tbody.append(h('tr', {}, h('td', { class: 'mono' }, r.id), h('td', {}, r.type), h('td', { class: 'num val' }, `${r.value.toFixed(2)} m`), h('td', {}, h('span', { style: 'display:inline-flex;gap:4px' }, ...tags)), h('td', {}, sel)));
+    });
+    const blind = h('input', { type: 'checkbox', id: 'blind', checked: '', onchange: (e) => table.classList.toggle('blind', e.target.checked) });
+    const stampBox = h('div');
+    const freeze = h('button', { class: 'btn primary', type: 'button', onclick: async () => {
+      const payload = JSON.stringify(EXAMPLE_RECORDS.map((r, i) => ({ id: r.id, value: r.value, ...state[i] })));
+      let hex = 'unavailable';
+      try { const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload)); hex = [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join(''); } catch {}
+      frozen = hex;
+      stampBox.replaceChildren(h('div', { class: 'stamp' }, 'FROZEN', h('small', {}, `sha256 ${hex.slice(0, 8)}…${hex.slice(-6)}`)));
+      status.textContent = 'This hash goes into the pre-registration. Any later change to tags or values produces a different hash.';
+      status.style.color = '';
+    } }, 'Freeze and hash');
+    return panel('Tag, blind, freeze', 'try it',
+      h('div', { class: 'row-tools' }, h('label', { class: 'switch', for: 'blind' }, blind, 'Blind mode (values hidden)'), freeze),
+      h('div', { class: 'scroll' }, table),
+      h('div', { style: 'display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:14px' }, stampBox, status));
+  },
+
+  quantogram() {
+    const st = { unit: 0.83, n: 120, sigma: 2, share: 70, seed: 7 };
+    const qs = grid(0.3, 2.0, 0.0025);
+    const W = 640, H = 300, X0 = 44, X1 = 624, Y0 = 254, Y1 = 22;
+    const svgEl = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': 'Quantogram score across candidate units from 30 cm to 2 m' });
+    const ring = s('svg', { viewBox: '-120 -120 240 240', class: 'chart', role: 'img', 'aria-label': 'Lengths wrapped around the selected candidate unit' });
+    const verdict = h('p', { class: 'verdict' });
+    let xs, ys, th, pk, hoverQ = null, ymin = -4, ymax = 13;
+    const px = (q) => X0 + ((q - 0.3) / 1.7) * (X1 - X0);
+    const py = (v) => Y0 - ((v - ymin) / (ymax - ymin)) * (Y0 - Y1);
+
+    const ctl = (label, id, min, max, step, val, fmtv, on) => {
+      const out = h('output', { for: id }, fmtv(val));
+      const inp = h('input', { type: 'range', id, min, max, step, value: val, oninput: (e) => { out.textContent = fmtv(Number(e.target.value)); on(Number(e.target.value)); schedule(); } });
+      return h('label', { class: 'ctl', for: id }, h('span', {}, `${label} `, out), inp);
+    };
+    const units = [[0.83, '83 cm'], [0.805, '80.5 cm'], [0.58, '58 cm'], [null, 'No unit']];
+    const seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Hidden unit' }, ...units.map(([u, l]) => h('button', { type: 'button', 'aria-pressed': String(u === st.unit), onclick: (e) => { st.unit = u; seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === e.currentTarget))); schedule(); } }, l)));
+    const controls = h('div', { class: 'controls' },
+      h('div', { class: 'ctl' }, h('span', {}, 'Hidden unit in the data'), seg),
+      ctl('Lengths', 'q-n', 20, 400, 10, st.n, (v) => String(v), (v) => (st.n = v)),
+      ctl('Survey noise', 'q-s', 0.5, 12, 0.5, st.sigma, (v) => `${v} cm`, (v) => (st.sigma = v)),
+      ctl('On the unit', 'q-share', 20, 100, 5, st.share, (v) => `${v}%`, (v) => (st.share = v)),
+      h('div', { class: 'ctl' }, h('span', {}, 'Sample'), h('button', { class: 'btn', type: 'button', onclick: () => { st.seed++; schedule(); } }, 'New sample')));
+
+    function draw() {
+      svgEl.replaceChildren();
+      ymax = Math.max(8, Math.ceil(Math.max(pk.phi, th.p99) + 1));
+      for (let v = 0; v <= ymax; v += 4) {
+        svgEl.append(s('line', { x1: X0, x2: X1, y1: py(v), y2: py(v), stroke: 'var(--line)' }));
+        const t = s('text', { x: X0 - 8, y: py(v) + 4, 'text-anchor': 'end', fill: 'var(--muted)', 'font-size': 12.5 }); t.textContent = v; svgEl.append(t);
+      }
+      for (const cm of [30, 50, 80, 100, 150, 200]) { const t = s('text', { x: px(cm / 100), y: Y0 + 20, 'text-anchor': 'middle', fill: 'var(--muted)', 'font-size': 12.5 }); t.textContent = cm; svgEl.append(t); }
+      const xl = s('text', { x: (X0 + X1) / 2, y: Y0 + 40, 'text-anchor': 'middle', fill: 'var(--muted)', 'font-size': 12.5 }); xl.textContent = 'candidate unit q (cm)'; svgEl.append(xl);
+      for (const [q, l] of [[0.58, '58'], [0.805, '80.5'], [0.83, '83']]) {
+        svgEl.append(s('line', { x1: px(q), x2: px(q), y1: Y1, y2: Y0, stroke: 'var(--steel)', 'stroke-dasharray': '3 4', opacity: 0.7 }));
+        const t = s('text', { x: px(q) + (l === '80.5' ? -4 : 4), y: Y1 + 10, 'text-anchor': l === '80.5' ? 'end' : 'start', fill: 'var(--steel)', 'font-size': 12 }); t.textContent = l; svgEl.append(t);
+      }
+      svgEl.append(s('line', { x1: X0, x2: X1, y1: py(th.p99), y2: py(th.p99), stroke: 'var(--ochre)', 'stroke-width': 1.5, 'stroke-dasharray': '7 6' }));
+      const tl = s('text', { x: X1, y: py(th.p99) - 6, 'text-anchor': 'end', fill: 'var(--ochre)', 'font-size': 12.5 }); tl.textContent = '99% noise threshold'; svgEl.append(tl);
+      let d = '';
+      for (let i = 0; i < qs.length; i++) d += `${i ? 'L' : 'M'}${px(qs[i]).toFixed(1)} ${py(Math.max(ymin, Math.min(ymax, ys[i]))).toFixed(1)}`;
+      svgEl.append(s('path', { d, fill: 'none', stroke: 'var(--ink)', 'stroke-width': 2, 'stroke-linejoin': 'round' }));
+      const ok = pk.phi > th.p99;
+      svgEl.append(s('circle', { cx: px(pk.q), cy: py(pk.phi), r: 5, fill: ok ? 'var(--ochre)' : 'var(--muted)', stroke: 'var(--surface)', 'stroke-width': 2 }));
+      const cross = s('line', { y1: Y1, y2: Y0, stroke: 'var(--muted)', 'stroke-width': 1, opacity: 0 });
+      const tip = s('text', { class: 'tip', fill: 'var(--ink)', 'font-size': 12, opacity: 0 });
+      svgEl.append(cross, tip);
+      const hit = s('rect', { x: X0, y: Y1, width: X1 - X0, height: Y0 - Y1, fill: 'transparent' });
+      const move = (e) => {
+        const r = svgEl.getBoundingClientRect();
+        const x = ((e.clientX - r.left) / r.width) * W;
+        const q = Math.max(0.3, Math.min(2.0, 0.3 + ((x - X0) / (X1 - X0)) * 1.7));
+        hoverQ = q;
+        cross.setAttribute('x1', px(q)); cross.setAttribute('x2', px(q)); cross.setAttribute('opacity', 1);
+        tip.textContent = `${(q * 100).toFixed(1)} cm · φ ${valueAt(qs, ys, q).toFixed(1)}`;
+        tip.setAttribute('x', Math.min(px(q) + 8, X1 - 120)); tip.setAttribute('y', Y1 + 26); tip.setAttribute('opacity', 1);
+        drawRing(q);
+      };
+      hit.addEventListener('pointermove', move);
+      hit.addEventListener('pointerdown', move);
+      hit.addEventListener('pointerleave', () => { cross.setAttribute('opacity', 0); tip.setAttribute('opacity', 0); hoverQ = null; drawRing(pk.q); });
+      svgEl.append(hit);
+      const a83 = valueAt(qs, ys, 0.83), a805 = valueAt(qs, ys, 0.805);
+      verdict.innerHTML = ok
+        ? `Peak at <b>${(pk.q * 100).toFixed(1)} cm</b> clears the 99% noise bar (φ <b>${pk.phi.toFixed(1)}</b> vs <b>${th.p99.toFixed(1)}</b>). Score at 83 cm: <b>${a83.toFixed(1)}</b>; at 80.5 cm: <b>${a805.toFixed(1)}</b>.`
+        : `No peak clears the 99% noise bar. Best is <b>${(pk.q * 100).toFixed(1)} cm</b> at φ <b>${pk.phi.toFixed(1)}</b> against a bar of <b>${th.p99.toFixed(1)}</b>.`;
+      drawRing(hoverQ ?? pk.q);
+    }
+    function drawRing(q) {
+      ring.replaceChildren(s('circle', { r: 92, fill: 'none', stroke: 'var(--line)', 'stroke-width': 2 }), s('line', { x1: 0, y1: -102, x2: 0, y2: -84, stroke: 'var(--jade)', 'stroke-width': 3 }));
+      let cx = 0, cy = 0;
+      xs.forEach((x, i) => {
+        const f = (x / q) % 1, a = f * Math.PI * 2;
+        cx += Math.cos(a); cy += Math.sin(a);
+        const rr = 92 + ((i % 7) - 3) * 3.5;
+        ring.append(s('circle', { cx: (Math.sin(a) * rr).toFixed(1), cy: (-Math.cos(a) * rr).toFixed(1), r: 2.6, fill: 'var(--ink)', opacity: 0.75 }));
+      });
+      cx /= xs.length; cy /= xs.length;
+      ring.append(s('line', { x1: 0, y1: 0, x2: (cy * 92).toFixed(1), y2: (-cx * 92).toFixed(1), stroke: 'var(--ochre)', 'stroke-width': 4, 'stroke-linecap': 'round' }));
+      const t = s('text', { x: 0, y: 6, 'text-anchor': 'middle', fill: 'var(--ink)', 'font-size': 20, 'font-weight': 700 }); t.textContent = `${(q * 100).toFixed(1)}`;
+      const t2 = s('text', { x: 0, y: 24, 'text-anchor': 'middle', fill: 'var(--muted)', 'font-size': 10 }); t2.textContent = 'cm';
+      ring.append(t, t2);
+    }
+    let timer = 0;
+    function schedule() { clearTimeout(timer); timer = setTimeout(compute, 90); }
+    function compute() {
+      xs = synth({ unit: st.unit, n: st.n, sigma: st.sigma / 100, share: st.share / 100, seed: st.seed });
+      ys = scan(xs, qs);
+      th = threshold(xs, qs, { sims: 140 });
+      pk = peak(qs, ys);
+      draw();
+    }
+    compute();
+    return panel('Quantogram explorer', 'synthetic data',
+      controls,
+      h('div', { class: 'qgrid' }, svgEl,
+        h('div', { class: 'qside' },
+          h('div', { style: 'max-width:200px;justify-self:center;width:100%' }, ring),
+          h('div', {}, verdict, h('p', { class: 'note', style: 'margin:8px 0 0' }, 'The ring shows every length wrapped around the unit under the cursor (or the peak). Bunching at the top mark means they share it.')))),
+      h('p', { class: 'note', style: 'margin:10px 0 0' }, 'Same method and code as the film. Try "No unit" to see what noise alone produces, or drop the share on the unit to see when a real unit stops being detectable.'));
+  },
+
+  store() {
+    const ITEMS = [
+      ['Raw point cloud tiles', 'COPC / LAZ, 1–2 GB each', false, 'Locates every feature. Stays on the encrypted lab drive.'],
+      ['Bare-earth DEM and relief rasters', 'Cloud-Optimized GeoTIFF', false, 'Imagery of the site. Stays in the vault.'],
+      ['Feature coordinates', 'easting, northing per line', false, 'Would reveal where features are. Never leaves.'],
+      ['Wall-to-wall spacings', 'lengths in metres', true, 'Numbers with no location. Safe to analyse anywhere.'],
+      ['Line orientations', 'angles in degrees', true, 'Only angles, no positions.'],
+      ['Quantogram scores and thresholds', 'summary statistics', true, 'Results, not data.'],
+      ['Manifest of SHA-256 fingerprints', 'text file in version control', true, 'Proves which data was used without containing it.'],
+    ];
+    const list = h('div', { class: 'sorter' });
+    let tried = 0;
+    const score = h('p', { class: 'note', style: 'margin:10px 0 0' }, 'Try sending each item to Claude.');
+    ITEMS.forEach(([name, kind, ok, why]) => {
+      const chip = h('span', { class: 'verdict-chip wait' }, 'not sent');
+      const btn = h('button', { class: 'btn', type: 'button', onclick: () => {
+        chip.className = `verdict-chip ${ok ? 'ok' : 'no'}`;
+        chip.textContent = ok ? 'allowed' : 'blocked';
+        note.textContent = why;
+        btn.remove();
+        tried++;
+        if (tried === ITEMS.length) score.textContent = 'Three of seven stay in the lab. Everything Claude sees is a number without a place.';
+      } }, 'Send to Claude');
+      const note = h('small', {}, kind);
+      list.append(h('div', { class: 'item' }, h('div', {}, h('b', {}, name), note), h('div', { style: 'display:flex;gap:8px;align-items:center' }, chip, btn)));
+    });
+    return h('div', { class: 'col' },
+      panel('What stays, what leaves', 'try it', list, score),
+      panel('Vault layout', 'example', h('pre', { class: 'mono', style: 'margin:0;font-size:12.5px;line-height:1.55;overflow-x:auto' },
+`vault/                      encrypted, lab only
+  raw/      tile_*.copc.laz     as delivered
+  derived/  dem_050cm.cog.tif
+            relief_050cm.cog.tif
+            lines_v3.gpkg
+  manifest.json   sha256 + params per file
+exports/   (the only folder that may leave)
+  spacings.csv   orientations.csv   scores.csv`)));
+  },
+
+  process() {
+    const STAGES = [
+      ['Points', 'Classified point cloud (ground, buildings, vegetation)', 'tiles from the vault', 'PDAL readers.copc, filters.range', 'Check the delivered ground class against field photos before trusting it.'],
+      ['Ground', 'Bare-earth points', 'all returns', 'PDAL filters.smrf or filters.csf where modern buildings confuse the delivered class', 'Parameters are logged in the manifest so the step can be rerun exactly.'],
+      ['Surface', '0.5 m digital elevation model', 'ground points', 'PDAL writers.gdal (IDW / TIN), GDAL to COG', 'Matches the scale at which the 2021 study saw low walls.'],
+      ['Relief', 'Local relief, sky-view factor, multi-directional hillshade, 0.5 m contours', 'DEM', 'RVT (Relief Visualization Toolbox), GDAL', 'These make features under 1–1.5 m high visible, the hardest ones in 2021.'],
+      ['Lines', 'Grid-aligned line segments', 'relief rasters', 'Edge detection + line-segment detector (OpenCV / scikit-image), collinear merging', 'Keep segments within 3° of 15.5° or 105.5°; the orientation histogram should show two sharp peaks.'],
+      ['Classes', 'Each line labelled ancient, modern or unsure', 'lines + relief patches', 'Segmentation model trained on the 2021 mapped features; held-out ground-verified areas for testing', 'Unsure lines go to the archaeologist; accuracy is reported per class before any measuring.'],
+    ];
+    let cur = 0;
+    const bar = h('div', { class: 'stagebar', role: 'group', 'aria-label': 'Processing stage' });
+    const card = h('div', { class: 'stagecard' });
+    const draw = () => {
+      bar.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-pressed', String(i === cur)));
+      const [n, out, inp, tool, why] = STAGES[cur];
+      card.replaceChildren(
+        h('div', { class: 'io' }, h('span', {}, `in: ${inp}`), h('span', {}, `out: ${out}`)),
+        h('p', {}, why),
+        h('div', { class: 'tool' }, `Tools: ${tool}`));
+    };
+    STAGES.forEach(([n], i) => bar.append(h('button', { type: 'button', onclick: () => { cur = i; draw(); } }, `${i + 1} ${n}`)));
+    draw();
+    // Orientation histogram (synthetic): ancient lines sit on the grid, modern ones scatter
+    const W = 600, H = 170, X0 = 30, X1 = 590, Y0 = 140, Y1 = 14;
+    const svgEl = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': 'Orientation histogram with peaks at 15.5 and 105.5 degrees' });
+    let seed = 11; const r = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const bins = new Array(90).fill(0);
+    for (let i = 0; i < 1400; i++) { const a = (r() < 0.5 ? 15.5 : 105.5) + (r() - 0.5) * 3; bins[Math.floor(a / 2)]++; }
+    for (let i = 0; i < 900; i++) bins[Math.floor(r() * 90)]++;
+    const mx = Math.max(...bins);
+    const bw = (X1 - X0) / 90;
+    for (const c of [15.5, 105.5]) svgEl.append(s('rect', { x: X0 + (c - 3) / 2 * bw, y: Y1, width: 3 * bw, height: Y0 - Y1, fill: 'var(--jade)', opacity: 0.12 }));
+    bins.forEach((v, i) => {
+      const deg = i * 2 + 1, win = Math.abs(deg - 15.5) <= 3 || Math.abs(deg - 105.5) <= 3;
+      const hgt = (v / mx) * (Y0 - Y1);
+      const rect = s('rect', { x: X0 + i * bw + 0.5, y: Y0 - hgt, width: bw - 1, height: hgt, fill: win ? 'var(--jade)' : 'var(--muted)', opacity: win ? 1 : 0.55, rx: 1 });
+      const t = s('title'); t.textContent = `${i * 2}–${i * 2 + 2}°: ${v} lines`; rect.append(t);
+      svgEl.append(rect);
+    });
+    for (const d of [0, 45, 90, 135, 180]) { const t = s('text', { x: X0 + d / 2 * bw, y: Y0 + 20, 'text-anchor': 'middle', fill: 'var(--muted)', 'font-size': 12 }); t.textContent = `${d}°`; svgEl.append(t); }
+    return h('div', { class: 'col' },
+      panel('Six stages', 'click a stage', bar, card),
+      panel('Orientation of detected lines', 'synthetic example', svgEl,
+        h('p', { class: 'note', style: 'margin:8px 0 0' }, 'Lines inside the shaded windows (within 3° of the city grid) go on to classification; the rest are set aside.')));
+  },
+
+  ai() {
+    const JOBS = [
+      ['Builds', 'Code with tests', ['DXF reader and measurement extractor', 'PDAL / GDAL lidar pipeline', 'Line classifier: training and evaluation', 'Quantogram, Monte Carlo, figures'], 'Check: every module passes on synthetic data with a planted answer first.'],
+      ['Reads', 'Messy to tidy', ['Spanish CAD layer names → element types', 'Field notes → phases and conditions', 'Legacy reports → structured rows', 'Draft methods and a Spanish summary'], 'Check: each proposal is confirmed or rejected by the archaeologist.'],
+      ['Remembers', 'A second dataset', ['Every published Teotihuacan dimension', 'With citation, page and figure', 'Units normalised to metres', 'Flagged where sources disagree'], 'Check: a random 10% of rows re-checked by hand.'],
+      ['Doubts', 'Skeptic agents', ['Argues against each result', 'Turns objections into runnable checks', 'Reports where the classifier is least sure', 'Never sees the hoped-for answer'], 'Check: the archaeologist decides which objections are plausible.'],
+    ];
+    return h('div', { class: 'col' },
+      h('div', { class: 'jobs' }, ...JOBS.map(([e, b, items, chk]) => h('div', { class: 'job' }, h('em', {}, e), h('b', {}, b), h('ul', {}, ...items.map((x) => h('li', {}, x))), h('div', { class: 'check' }, chk)))),
+      panel('Why it matters', 'scale', h('p', { style: 'margin:0' }, 'Most of this work is the kind a lab would hand to several research assistants for a year: writing pipelines, cleaning tables, combing the literature. With Claude doing it under review, two people can run the full project part-time, and spend their own hours on the decisions only they can make.')));
+  },
+
+  guard() {
+    const PROPOSALS = [
+      ['Layer "MURO_F3"', 'wall, phase 3'],
+      ['Layer "ESC_PONIENTE"', 'stair, west face'],
+      ['Field note, unit 14', 'restored in the 1960s'],
+      ['Line #2291', 'ancient (confidence 0.58)'],
+    ];
+    const log = h('div', { class: 'note', style: 'margin-top:10px' }, 'Decisions appear here, with who made them.');
+    const lines = [];
+    const gate = h('div', { class: 'gate' }, ...PROPOSALS.map(([what, prop]) => {
+      const st = h('span', { class: 'verdict-chip wait' }, 'proposed');
+      const decide = (ok) => {
+        st.className = `verdict-chip ${ok ? 'ok' : 'no'}`; st.textContent = ok ? 'confirmed' : 'rejected';
+        btns.remove();
+        lines.push(`${what}: ${prop} · ${ok ? 'confirmed' : 'rejected'} by the archaeologist`);
+        log.replaceChildren(...lines.map((l) => h('div', {}, l)));
+      };
+      const btns = h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => decide(true) }, 'Confirm'), h('button', { class: 'btn', type: 'button', onclick: () => decide(false) }, 'Reject'));
+      return h('div', { class: 'row' }, h('div', {}, h('b', {}, what), h('small', {}, `Claude proposes: ${prop}`)), h('div', { style: 'display:flex;gap:8px;align-items:center' }, st, btns));
+    }));
+    return h('div', { class: 'col' },
+      panel('You are the archaeologist', 'try it', gate, log),
+      panel('Never sent to the AI', 'guardrails', h('ul', { class: 'points' },
+        h('li', {}, 'Coordinates, point clouds, rasters or imagery of the site.'),
+        h('li', {}, 'Final verdicts: the AI proposes, people decide.'),
+        h('li', {}, 'The test itself: the quantogram and Monte Carlo are plain code that runs with no model, so anyone can rerun the result.'))));
+  },
+
+  skeptics() {
+    return panel('Objections become checks', 'skeptic round', h('div', { class: 'sk' }, ...SKEPTICS.map(([q, c, why], i) => {
+      const d = h('details', {}, h('summary', {}, h('b', {}, q), h('span', {}, c)), h('p', {}, why));
+      if (i === 0) d.open = true;
+      return d;
+    })));
+  },
+
+  city() {
+    const W = 600, H = 300;
+    const svgEl = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': 'Schematic: grid-aligned ancient walls with a transect measuring spacing between them' });
+    let seed = 3; const r = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const g = s('g', { transform: `rotate(15.5 ${W / 2} ${H / 2})` });
+    for (let i = 0; i < 70; i++) {
+      const x = r() * 640 - 20, y = r() * 340 - 20, a = r() * 180;
+      g.append(s('line', { x1: x, y1: y, x2: x + 26, y2: y, stroke: 'var(--muted)', 'stroke-width': 1.4, opacity: 0.45, transform: `rotate(${a} ${x} ${y})` }));
+    }
+    const walls = [];
+    for (let x = 40; x < 580; x += 52 + Math.round(r() * 10)) for (let y = 30; y < 280; y += 60 + Math.round(r() * 12)) if (r() > 0.3) {
+      g.append(s('rect', { x, y, width: 38, height: 38, fill: 'none', stroke: 'var(--jade)', 'stroke-width': 2.2 }));
+      if (Math.abs(y + 19 - 150) < 30) walls.push(x, x + 38);
+    }
+    g.append(s('line', { x1: 20, x2: 580, y1: 150, y2: 150, stroke: 'var(--ochre)', 'stroke-width': 2 }));
+    for (const x of walls) g.append(s('line', { x1: x, x2: x, y1: 140, y2: 160, stroke: 'var(--ochre)', 'stroke-width': 2 }));
+    svgEl.append(g);
+    const sb = s('g', {}); sb.append(s('line', { x1: 24, x2: 124, y1: 284, y2: 284, stroke: 'var(--ink)', 'stroke-width': 2 }));
+    const st = s('text', { x: 130, y: 288, fill: 'var(--muted)', 'font-size': 12.5 }); st.textContent = '≈100 m'; sb.append(st); svgEl.append(sb);
+    return panel('Spacing between parallel walls', 'schematic', svgEl,
+      h('div', { class: 'legend' }, h('span', {}, h('i', { style: 'background:var(--jade)' }), 'ancient, on the grid'), h('span', {}, h('i', { style: 'background:var(--muted)' }), 'other features'), h('span', {}, h('i', { style: 'background:var(--ochre)' }), 'transect and crossings')),
+      h('p', { class: 'note', style: 'margin:10px 0 0' }, 'Illustration only. The real analysis runs on the lab’s copy of the 2015 lidar and the ground-verified feature classes.'));
+  },
+
+  roles() {
+    return h('div', { class: 'col' },
+      h('div', { class: 'cards' }, ...ROLES.map(([e, b, t]) => h('div', { class: 'card' }, h('em', {}, e), h('b', {}, b), h('span', {}, t)))),
+      panel('Where the data lives', 'data handling', h('div', { class: 'two', style: 'margin-top:0' },
+        h('div', {}, h('b', {}, 'Stays in the lab'), h('ul', {}, h('li', {}, 'AutoCAD plans and DXF exports'), h('li', {}, 'Point clouds, DEMs, imagery'), h('li', {}, 'Coordinates of any feature'))),
+        h('div', {}, h('b', {}, 'Goes to Claude'), h('ul', {}, h('li', {}, 'Lengths, tags and phases'), h('li', {}, 'Layer names for mapping'), h('li', {}, 'Code, logs and draft text'))))));
+  },
+
+  outcomes() {
+    return h('div', { class: 'col' },
+      h('div', { class: 'cards' }, ...OUTCOMES.map(([e, b, t]) => h('div', { class: 'card' }, h('em', {}, e), h('b', {}, b), h('span', {}, t)))),
+      panel('Where it goes', 'venues', h('ul', { class: 'points' },
+        h('li', {}, 'Main paper: Journal of Archaeological Science, Latin American Antiquity or PLOS ONE.'),
+        h('li', {}, 'Toolkit paper, open source without site data: Journal of Computer Applications in Archaeology.'),
+        h('li', {}, 'Talks: SAA Annual Meeting, CAA.'))));
+  },
+
+  next() {
+    const saved = store.get('mot-checks') || {};
+    return h('div', { class: 'col' },
+      panel('Timeline', 'part-time estimate', h('div', { class: 'weeks' }, ...WEEKS.map(([w, t]) => h('div', { class: 'week' }, h('em', {}, w), h('div', {}, t))))),
+      panel('Questions for the first call', 'checklist', h('ul', { class: 'checks' }, ...FIRST_CALL_QUESTIONS.map((q, i) => {
+        const id = `fc-${i}`;
+        const cb = h('input', { type: 'checkbox', id, onchange: (e) => { saved[i] = e.target.checked; store.set('mot-checks', saved); } });
+        if (saved[i]) cb.checked = true;
+        return h('li', {}, h('label', { for: id }, cb, h('span', {}, q)));
+      }))));
+  },
+};
+
+// ---------------------------------------------------------------- sources + start
+$('#sources').replaceChildren(...SOURCES.map((x) => h('li', {}, h('a', { href: x.url, target: '_blank', rel: 'noopener' }, x.title), h('span', {}, ` · ${x.where}`))));
+
+const fromHash = CHAPTERS.findIndex((c) => `#${c.id}` === location.hash);
+const start = fromHash >= 0 ? fromHash : (store.get('mot-step') ?? 0);
+render(start);
+if (start > 0) player.currentTime = TIMELINE.chapters[start].start + 0.05;
+kick();
+addEventListener('keydown', (e) => {
+  if (e.key !== ' ' || e.target.closest('input, select, textarea, button, summary')) return;
+  e.preventDefault();
+  player.paused ? player.play() : player.pause();
+});
+</script>

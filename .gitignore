@@ -1,0 +1,13 @@
+# Render intermediates (the raw frame render alone is ~900 MB)
+render/out/
+render/node_modules/
+render/audio/proc/
+render/audio/voice-*/
+
+# The 1080p master is over GitHub's 100 MB file limit; it ships as a release asset
+The-Measure-of-Teotihuacan.mp4
+
+# Local tooling
+.claude/
+.DS_Store
+__pycache__/
