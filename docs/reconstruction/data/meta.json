@@ -1,0 +1,43 @@
+{
+ "origin_utm14n": [
+  516200.0,
+  2177150.0
+ ],
+ "base": 2200.0,
+ "scale": 50.0,
+ "grid_deg": 15.5,
+ "layers": {
+  "core": {
+   "x0": -2100.0,
+   "x1": 2100.0,
+   "y0": -2250.0,
+   "y1": 2250.0,
+   "res": 3,
+   "w": 1400,
+   "h": 1500
+  },
+  "context": {
+   "x0": -4589.0,
+   "x1": 7123.0,
+   "y0": -7190.0,
+   "y1": 6706.0,
+   "res": 12,
+   "w": 976,
+   "h": 1158
+  },
+  "horizon": {
+   "x0": -16000.0,
+   "x1": 16000.0,
+   "y0": -16000.0,
+   "y1": 16000.0,
+   "res": 40,
+   "w": 800,
+   "h": 800
+  }
+ },
+ "attribution": [
+  "Terrain and surface: INEGI, Modelos digitales de elevaci\u00f3n de alta resoluci\u00f3n LiDAR 1.5 m, sheets E14B21B1\u2013B4 (2025 edition). INEGI terms of free use.",
+  "Horizon: Terrain Tiles on AWS (Tilezen/Mapzen; SRTM, GMTED2010 and other open sources).",
+  "Site outlines and the Street of the Dead: \u00a9 OpenStreetMap contributors, ODbL."
+ ]
+}

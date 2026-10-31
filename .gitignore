@@ -11,3 +11,6 @@ The-Measure-of-Teotihuacan.mp4
 .claude/
 .DS_Store
 __pycache__/
+
+# Downloaded open data for the reconstruction (rebuilt by recon/build_data.py)
+recon-data/

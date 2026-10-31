@@ -40,6 +40,29 @@ Pace: `SPEED` in `docs/story.js` compresses the timeline and `render/soundtrack.
 
 Narration was generated with ElevenLabs (library voice "Grant Gravitas", model `eleven_multilingual_v2`). To change a line, edit it in `docs/story.js`, regenerate that chapter's clip, save it as `render/audio/<chapter-id>.mp3`, and rerun the chain. `render/prompts.json` holds the exact text sent for each chapter.
 
+## Lidar reconstruction (prototype)
+
+**Live:** https://webgpu-demos.github.io/measure-of-teotihuacan/reconstruction/
+
+The city rebuilt on INEGI's free 1.5 m LiDAR models (sheets E14B21B1–B4, 2025 edition), with a draggable divider between today's lidar surface, the bare earth and a reconstruction around 450 CE. Every reconstructed part carries an evidence class:
+
+| Class | Meaning |
+|---|---|
+| Measured in lidar | footprint and height measured on the public lidar (as the monument stands today) |
+| Excavated plan | known from excavation and published plans, not resolvable in public lidar |
+| Inferred | summit temples, roofs and finishes, reconstructed by analogy |
+| Lidar mound (unverified) | a compact, compound-sized mound found automatically inside the archaeological zone |
+| Illustrative | placed by rule to show the city's density; positions are not data |
+
+`recon/build_data.py` downloads the INEGI sheets and an OpenStreetMap extract into `recon-data/` (not committed), builds three nested terrain layers (3 m core, 12 m context, 40 m horizon from Terrain Tiles on AWS), measures the monuments on the 3 m terrain, finds the Ciudadela's banks, fits the Street of the Dead and runs the mound detector. It writes `docs/reconstruction/data/`. `docs/reconstruction/recon.js` builds the scene; `recon/shot.mjs` takes headless screenshots of any view for checking.
+
+```bash
+python3 -I recon/build_data.py      # needs numpy, scipy, Pillow and the GDAL command-line tools
+node recon/shot.mjs avenue:today:then sun:then:then:ev:one
+```
+
+Data notes: heights are INEGI's (terms of free use, with attribution); `docs/reconstruction/data/sites.json` is derived from OpenStreetMap and is available under the ODbL. The private version of this pipeline would swap in the team's own lidar and mapped features, run on their machines.
+
 ## Honesty notes
 
 - The 3D scenes are illustrations, not survey data. The real lidar and CAD stay with the excavation team under INAH rules.
