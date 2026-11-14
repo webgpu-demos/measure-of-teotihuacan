@@ -14,3 +14,11 @@ __pycache__/
 
 # Downloaded open data for the reconstruction (rebuilt by recon/build_data.py)
 recon-data/
+
+# Lidar surfaces (lidar/surface.py): point clouds, case-study settings and every output stay with the data.
+*.las
+*.LAS
+*.laz
+*.LAZ
+surfaces/
+cases.toml

@@ -1,0 +1,48 @@
+# Case studies for lidar/surface.py. Copy this file to cases.toml next to the data (cases.toml stays out
+# of the repository: it names the team's files and areas), edit it, then:
+#
+#   python lidar/surface.py run cases.toml --dry-run     # check the settings each case will use
+#   python lidar/surface.py run cases.toml               # results go to surfaces/<case name>/
+#
+# Settings under [defaults] apply to every case; a case can change any of them for itself. Cases are only
+# comparable when they share their settings: surfaces/cases.csv shows a settings fingerprint for each.
+
+[defaults]
+resolution = "auto"     # metres per cell, or "auto": about two ground points per cell (see README)
+ground = "delivered"    # "delivered": use the survey's own ground class (2), as the vendor classified it
+                        # "smrf": classify the ground here (settings below); "csf": cloth filter (see README:
+                        #         it flattened the test pyramid)
+srs = ""                # only if the files carry no coordinate system, e.g. "EPSG:32614" (UTM 14N, WGS 84)
+noise = true            # flag isolated points and multipath (below-ground) points as noise first
+min_points = 2          # cells with this many ground points take their mean; others are interpolated
+mesh = true             # surface.ply / surface.obj
+mesh_formats = ["ply", "obj"]
+relief = true           # hillshade, slope and local relief (SLRM)
+slrm_radius = 10.0      # metres
+hash_inputs = true      # SHA-256 of every input in run.json; slow on hundreds of GB
+
+# Used when ground = "smrf". These kept a 1.5 m altar, 0.4 m walls and a stepped pyramid in the tests,
+# and removed houses 3-6 m tall. PDAL's own defaults (slope 0.15, window 18) cut the altar to 0.5 m.
+smrf = { cell = 1.0, slope = 0.6, window = 14.0, threshold = 0.5, scalar = 1.25 }
+csf = { resolution = 0.5, rigidness = 1, threshold = 0.5, step = 0.65, smooth = true }
+
+# One block per case study. input: a file, a pattern, or a list of them (relative to this file).
+# bounds = [xmin, ymin, xmax, ymax] in the survey's coordinates cuts the case out of a larger survey.
+
+[[case]]
+name = "whole-survey"
+input = "lidar/tiles/*.laz"
+resolution = 1.0
+mesh = false            # a whole-valley mesh at fine cells is too big to open; mesh the case studies
+
+[[case]]
+name = "case-study-a"
+input = "lidar/tiles/*.laz"
+# bounds = [xmin, ymin, xmax, ymax]
+note = "what this case is, in a few words"
+
+[[case]]
+name = "case-study-b-reclassified"
+input = "lidar/tiles/*.laz"
+# bounds = [xmin, ymin, xmax, ymax]
+ground = "smrf"         # if the vendor's ground class cut a feature: compare with case-study-b
