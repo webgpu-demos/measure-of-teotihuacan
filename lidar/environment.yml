@@ -1,0 +1,19 @@
+# The lidar tools in this folder, on the lab machine. Windows, Mac or Linux:
+#   conda env create -f lidar/environment.yml
+#   conda activate teo-lidar
+# Tested with Python 3.12, PDAL 2.7, GDAL 3.9, numpy 1.26, scipy 1.13, laspy 2.6, Open3D 0.19.
+name: teo-lidar
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pdal>=2.6,<3
+  - gdal>=3.8
+  - numpy=1.26
+  - scipy>=1.11
+  - laspy>=2.5
+  - lazrs-python
+  - pytest
+  - pip
+  - pip:
+      - open3d==0.19.0        # only for close-range scans (surface.py mesh3d)

@@ -26,3 +26,11 @@ layer_map.csv
 out/
 private/
 .pytest_cache/
+
+# Lidar surfaces (lidar/surface.py): point clouds, case-study settings and every output stay with the data.
+*.las
+*.LAS
+*.laz
+*.LAZ
+surfaces/
+cases.toml
