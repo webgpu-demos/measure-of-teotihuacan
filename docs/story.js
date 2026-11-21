@@ -4,6 +4,8 @@
 
 export const TITLE = 'The Measure of Teotihuacan';
 export const SUBTITLE = 'A plan to test whether the city was built with a shared unit of length, using excavation CAD, lidar and AI.';
+// The plan in one paragraph, at the top of PLAN.md.
+export const PLAN_SUMMARY = 'Teotihuacan’s lidar is a poor fit for “find the lost city”: the city is known, and most of the valley floor has been rebuilt on top of it along the same orientation. The excavation team’s 3D AutoCAD plans are a better starting point for a different question: did the builders share a standard unit of length? The plan turns the drawings into a large, source-linked set of dimensions, has the archaeologist tag them blind, freezes and pre-registers the dataset, tests named hypotheses with a cosine quantogram, Monte Carlo thresholds and Bayesian model comparison, and has Claude skeptic agents attack every result. The team’s recent lidar is kept in an encrypted, fingerprinted vault, processed into a bare-earth surface and grid-aligned lines, classified ancient or modern with a model trained on the team’s own ground-checked map, and measured for a second, city-scale test. Claude builds, reads, remembers and doubts, but people make every call, it never sees coordinates, imagery or the raw drawings and lidar, and the final statistics run without any AI. Every outcome is publishable because the test is fixed in advance.';
 
 export const CHAPTERS = [
   {
@@ -86,8 +88,8 @@ export const CHAPTERS = [
         'Convert DWG to DXF with the free ODA File Converter, then read geometry and layers in Python with ezdxf.',
         'Handle lines, polylines, 3D faces and meshes; export any ACIS solids to mesh from AutoCAD first.',
         'Rotate every drawing into city-grid coordinates (15.5° east of north) so "length" and "width" mean the same thing everywhere.',
-        'Map layer names to element types (wall, stair, talud, tablero, floor). The reader suggests a mapping from built-in Spanish and English rules; the archaeologist confirms it.',
-        'The reader runs on the team’s own computer. Claude writes and tests it on made-up drawings and never sees the real ones.',
+        'Map layer names to element types (wall, stair, talud, tablero, floor). The reader suggests a mapping from built-in Spanish and English rules and Claude proposes the rest; the archaeologist confirms every one.',
+        'The reader runs on the team’s own computer. Claude writes and tests it on made-up drawings; it sees the layer names and lengths, never the drawings themselves.',
       ],
       who: ['Engineer', 'Claude'],
       widget: 'pipeline',
@@ -166,15 +168,14 @@ export const CHAPTERS = [
     kicker: 'Step 6 · Attack',
     title: 'Try to break every result',
     lines: [
-      'Step 6: AI skeptic agents list every way a result could be explained away.',
+      'Step 6: AI skeptic agents try to explain each result away.',
       'Drafting rounding. Modern restoration. Stairs sized to feet. Lucky calendar numbers.',
       'Each objection becomes a check that runs before anyone believes the peak.',
     ],
     app: {
-      summary: 'Metrology has a long history of people finding the unit they hoped for. Before any real result exists, separate Claude agents are told to argue against the method: every way a peak could be explained away becomes a concrete check that the team runs on the real data.',
+      summary: 'Metrology has a long history of people finding the unit they hoped for. Separate Claude agents are told to argue against each result; each objection they raise is turned into a concrete check that the pipeline runs.',
       points: [
-        'Skeptics see only the method, the pre-registration and synthetic examples, never the team’s data or results.',
-        'Because they work on the method alone, their checks are written before the freeze and pre-registered with the test.',
+        'Skeptics see the result and the method, never the hoped-for answer.',
         'An objection only counts once it names a test that could confirm or rule it out.',
         'The archaeologist decides which objections are archaeologically plausible.',
       ],
@@ -199,7 +200,7 @@ export const CHAPTERS = [
         'One working copy, on an encrypted drive or lab server with a named access list. No shared drives, and no cloud unless the permit allows an encrypted account hosted in Mexico.',
         'Point clouds as COPC (cloud-optimized, compressed LAZ); surfaces as Cloud-Optimized GeoTIFF. Both are open formats that PDAL, GDAL and QGIS read directly.',
         'A manifest records a SHA-256 fingerprint for every tile and every derived raster, plus the processing settings. The manifest, not the data, lives in version control.',
-        'What may leave the lab, for the team’s own analysis and papers: lengths, angles, counts and summary statistics. Never coordinates, point clouds or imagery. None of it goes to Claude or any other AI service. Check this against the permit before starting.',
+        'What may leave the lab: lengths, angles, counts and summary statistics. Never coordinates, point clouds or imagery. Check this against the permit before starting.',
       ],
       who: ['Engineer', 'Archaeologist'],
       widget: 'store',
@@ -259,17 +260,17 @@ export const CHAPTERS = [
     lines: [
       'So what does the AI actually bring?',
       'It builds: the CAD reader, the lidar pipeline and the statistics, each with tests.',
-      'It reads: decades of published reports, in Spanish and English, become tidy tables.',
+      'It reads: Spanish layer names, field notes and old reports become tidy tables.',
       'It remembers: every published dimension of the city, gathered into a second dataset.',
-      'And it doubts: skeptic agents attack the method before a reviewer can.',
+      'And it doubts: skeptic agents attack each result before a reviewer can.',
     ],
     app: {
-      summary: 'The AI is not a black box that decodes the city. It is a fast, tireless colleague that does four specific jobs, each with a human check at the end, and none of them touches the team’s data. Together they let two people run a project that would normally need a small lab.',
+      summary: 'The AI is not a black box that decodes the city. It is a fast, tireless colleague that does four specific jobs, each with a human check at the end. Together they let two people run a project that would normally need a small lab.',
       points: [
-        'Build: writes and tests the code for every step (ezdxf, PDAL and GDAL wrappers, extraction, statistics, figures), including the lidar classifier’s training code, on synthetic and public data where the right answer is known. The team runs it on the real data.',
-        'Read: turns published reports into structured rows, and drafts the methods and a Spanish summary for INAH and local partners. It does not read the team’s drawings, layer names or field notes.',
+        'Build: writes and tests the code for every step (ezdxf, PDAL and GDAL wrappers, extraction, statistics, figures), including the lidar classifier’s training and evaluation code, always starting from synthetic and public data where the right answer is known. The team runs it on the real lidar.',
+        'Read: proposes layer-to-element mappings, pulls phases and conditions out of field notes, turns legacy reports into structured rows, and drafts the methods and a Spanish summary for INAH and local partners.',
         'Remember: extracts every published Teotihuacan dimension, with its citation, into an independent comparison dataset.',
-        'Doubt: runs the skeptic round in Step 6 on the method, and writes the checks the team runs on the real results.',
+        'Doubt: runs the skeptic round in Step 6 and reports where the classifier and the statistics are least certain.',
       ],
       who: ['Claude'],
       widget: 'ai',
@@ -282,16 +283,16 @@ export const CHAPTERS = [
     title: 'People decide, AI assists',
     lines: [
       'Just as important is where the AI stops.',
-      'It never decides what is ancient. The archaeologist has the final say on every tag.',
-      'It never sees the team’s data: not the coordinates, not the imagery, not even the lengths.',
+      'It never decides what is ancient. The archaeologist confirms every tag it proposes.',
+      'It never sees coordinates or imagery, only lengths and labels.',
       'Every prompt and script is logged, and the final statistics run without any AI at all.',
     ],
     app: {
-      summary: 'A reviewer will ask what the AI did. The answer has to be short and checkable: it wrote and checked code without seeing the team’s data, people decided, and the test itself is classical statistics that anyone can rerun.',
+      summary: 'A reviewer will ask what the AI did. The answer has to be short and checkable: it proposed, people decided, and the test itself is classical statistics that anyone can rerun.',
       points: [
-        'Every suggestion, from the layer rules or the lidar classifier, has a status: proposed, confirmed or rejected, and who decided.',
-        'Claude never receives the team’s data, raw or derived: no coordinates, point clouds or imagery, and no lengths, tags or results. It works on code, synthetic data and published sources.',
-        'The lidar classifier is an ordinary model trained and run in the lab, so no data leaves to train it.',
+        'Every suggestion, from Claude, the layer rules or the lidar classifier, has a status: proposed, confirmed or rejected, and who decided.',
+        'Claude never receives the drawings, point clouds, coordinates, imagery or anything that locates a feature.',
+        'The lidar classifier is an ordinary model trained and run in the lab, so no raw lidar leaves to train it.',
         'Prompts, model versions and scripts are logged with the manifest, so the whole chain can be audited.',
         'The quantogram, Monte Carlo and model comparison are ordinary code that runs without any AI, so the result does not depend on a model.',
       ],
@@ -314,7 +315,7 @@ export const CHAPTERS = [
       points: [
         'Archaeologist: original versus restored, construction phases, permits, interpretation, and the final say on every tag.',
         'Lidar and 3D engineer: the vault, the processing pipeline, the 3D viewer and the reproducible runs.',
-        'Claude: code, published literature, the classifier’s training code and skeptic review of the method, all under the guardrails in the previous step.',
+        'Claude: code, reading, literature, classification and skeptic review, all under the guardrails in the previous step.',
       ],
       widget: 'roles',
     },
@@ -355,7 +356,7 @@ export const CHAPTERS = [
       points: [
         'Weeks 1–2: synthetic buildings with a planted unit, a pure-noise control, and a building drawn in feet (the pipeline should find 30.48 cm). Output: a power analysis. In parallel, set up the lidar vault and manifest.',
         'Weeks 3–6: one structure from DWG to tagged measurements in the viewer; lidar ground check, surfaces and line detection.',
-        'Weeks 7–10: full corpus curation, the skeptic checks, pre-registration and the test; train and test the lidar classifier on ground-verified areas.',
+        'Weeks 7–10: full corpus curation, pre-registration, the test, the skeptic round; train and test the lidar classifier on ground-verified areas.',
         'Weeks 11–16: the city-scale test, the cross-scale comparison and the first draft.',
       ],
       widget: 'next',
@@ -486,7 +487,7 @@ export const SKEPTICS = [
 export const ROLES = [
   ['Archaeologist', 'Ground truth', 'Original vs restored, construction phases, permits, and what the answer means.'],
   ['Lidar & 3D engineer', 'The vault and pipeline', 'Lidar custody, processing and classification; the CAD reader and 3D viewer.'],
-  ['Claude', 'Speed and scrutiny', 'Builds, reads, remembers and doubts, on code and published sources only, never deciding.'],
+  ['Claude', 'Speed and scrutiny', 'Builds, reads, remembers and doubts, always proposing and never deciding.'],
 ];
 
 export const OUTCOMES = [
@@ -499,7 +500,7 @@ export const OUTCOMES = [
 export const WEEKS = [
   ['Weeks 1–2', 'Synthetic buildings; set up the lidar vault'],
   ['Weeks 3–6', 'One structure end to end; lidar surfaces and lines'],
-  ['Weeks 7–10', 'Full corpus, skeptic checks, freeze, test; train the classifier'],
+  ['Weeks 7–10', 'Full corpus, freeze, test, attack; train the classifier'],
   ['Weeks 11–16', 'City-scale test and the first draft'],
 ];
 

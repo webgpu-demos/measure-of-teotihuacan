@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  TITLE, SUBTITLE, CHAPTERS, TIMELINE, HYPOTHESES, SKEPTICS, ROLES, OUTCOMES, WEEKS, FIRST_CALL_QUESTIONS, SOURCES,
+  TITLE, SUBTITLE, PLAN_SUMMARY, CHAPTERS, TIMELINE, HYPOTHESES, SKEPTICS, ROLES, OUTCOMES, WEEKS, FIRST_CALL_QUESTIONS, SOURCES,
 } from '../docs/story.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -16,7 +16,7 @@ p(`# ${TITLE}`, '', SUBTITLE, '');
 p(`Generated from \`docs/story.js\`, the same storyboard that drives the film (\`docs/film.mp4\`, ${fmt(TIMELINE.duration)}) and the walkthrough app (\`docs/index.html\`). Edit the storyboard, not this file.`, '');
 
 p('## The plan in one paragraph', '');
-p('Teotihuacan’s lidar is a poor fit for “find the lost city”: the city is known, and most of the valley floor has been rebuilt on top of it along the same orientation. The excavation team’s 3D AutoCAD plans are a better starting point for a different question: did the builders share a standard unit of length? The plan turns the drawings into a large, source-linked set of dimensions, has the archaeologist tag them blind, freezes and pre-registers the dataset, tests named hypotheses with a cosine quantogram, Monte Carlo thresholds and Bayesian model comparison, and has Claude skeptic agents attack the method before the test. The team’s recent lidar is kept in an encrypted, fingerprinted vault, processed into a bare-earth surface and grid-aligned lines, classified ancient or modern with a model trained on the team’s own ground-checked map, and measured for a second, city-scale test. Claude builds, reads, remembers and doubts, but only on code, synthetic data and published sources: it never sees the team’s data, people make every call, and the final statistics run without any AI. Every outcome is publishable because the test is fixed in advance.', '');
+p(PLAN_SUMMARY, '');
 
 p('## Steps', '');
 CHAPTERS.forEach((ch, i) => {

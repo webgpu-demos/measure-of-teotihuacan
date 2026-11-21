@@ -4,13 +4,13 @@ Part of Step 7 (store the lidar like evidence). One small script, `datacheck.py`
 
 | Command | When | What it writes | Who may see it |
 |---|---|---|---|
-| `specs` | Before buying the laptop | `specs.txt`: totals only (file counts and sizes by kind, lidar points, area, density, a disk-size estimate) | The team. It has no file names and no coordinates |
+| `specs` | Before buying the laptop | `specs.txt`: totals only (file counts and sizes by kind, lidar points, area, density, a disk-size estimate) | The team, and Claude if you like: it has no file names and no coordinates |
 | `manifest` | Right after loading the laptop | `manifest.csv`: a SHA-256 fingerprint of every file | Stays with the data |
 | `verify` | When the laptop arrives, and before any analysis | A list of missing, changed and extra files | The team |
 
 `specs` reads only each LAS/LAZ file's header, so it takes seconds even on hundreds of gigabytes. `manifest` and `verify` read every byte, so expect roughly 2–20 minutes per 100 GB, from a fast internal SSD to an external hard drive.
 
-**Never paste `specs.txt`, `manifest.csv` or any output from this script into an AI chat** (Claude, ChatGPT, Copilot or any other). The team's data, even totals, does not go to cloud AI services.
+`specs.txt` holds totals only, so it may go to Claude like any other derived number. **Never paste `manifest.csv` into an AI chat** (Claude, ChatGPT, Copilot or any other): it names every file and stays with the data.
 
 ## Steps for preparing the laptop
 

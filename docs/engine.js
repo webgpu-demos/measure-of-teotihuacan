@@ -735,7 +735,7 @@ export async function createFilm(stage, opts = {}) {
 
   const roles = el('', 'cards', ui); roles.style.gridTemplateColumns = 'repeat(3, 1fr)';
   const ROLE = ROLES.map(([e, b, p]) => el(`<em>${e}</em><b>${b}</b><p>${p}</p>`, 'card', roles));
-  const lock = el('<i>■</i> Drawings, lidar and results stay in the lab. Claude only sees code and synthetic data.', 'o', ui); lock.id = 'lock';
+  const lock = el('<i>■</i> Raw drawings and lidar stay in the lab. Claude sees lengths and tags, never coordinates.', 'o', ui); lock.id = 'lock';
 
   const tileLabels = tileTags.map((tt) => { const d = el(tt.text, 'label3d', labels); d.style.fontSize = '15px'; d.style.textAlign = 'center'; return d; });
   const vault = el(`<div class="head"><span>vault / manifest.json</span><span>size · sha256</span></div>` +
@@ -752,15 +752,15 @@ export async function createFilm(stage, opts = {}) {
   Object.assign(lineLegend.style, { left: '96px', top: '290px', padding: '12px 16px', background: 'rgba(8,10,11,0.72)', borderRadius: '6px' });
   const jobs = el('', 'cards', ui); jobs.style.gridTemplateColumns = 'repeat(4, 1fr)'; jobs.style.top = '300px';
   const JOB = [['Builds', 'Pipeline and tests', 'CAD reader, lidar pipeline, classifier and statistics, each tested on data with a known answer.'],
-    ['Reads', 'Messy to tidy', 'Published reports, in Spanish and English, become structured, citable rows.'],
+    ['Reads', 'Messy to tidy', 'Spanish layer names, field notes and old reports become structured, citable rows.'],
     ['Remembers', 'A second dataset', 'Every published dimension of the city, with its source, for an independent check.'],
-    ['Doubts', 'Skeptic agents', 'Attack the method and turn every objection into a check the team runs.']]
+    ['Doubts', 'Skeptic agents', 'Attack each result and turn every objection into a check that runs.']]
     .map(([e, b, p]) => el(`<em>${e}</em><b>${b}</b><p>${p}</p>`, 'card', jobs));
-  const guardBox = el(`<div class="gflow"><div class="gnode">Rules &amp; classifier<br><small>suggest</small></div><i>→</i><div class="gnode accent">Archaeologist<br><small>confirms or rejects</small></div><i>→</i><div class="gnode">Frozen dataset<br><small>hashed, pre-registered</small></div></div>`, 'o', ui);
+  const guardBox = el(`<div class="gflow"><div class="gnode">Claude<br><small>proposes</small></div><i>→</i><div class="gnode accent">Archaeologist<br><small>confirms or rejects</small></div><i>→</i><div class="gnode">Frozen dataset<br><small>hashed, pre-registered</small></div></div>`, 'o', ui);
   guardBox.id = 'guard';
-  const never = el('<b>Never sent to Claude</b><span>coordinates</span><span>point clouds</span><span>imagery</span><span>lengths</span><span>results</span>', 'o never', ui);
+  const never = el('<b>Never sent to the AI</b><span>coordinates</span><span>point clouds</span><span>imagery</span><span>final verdicts</span>', 'o never', ui);
   const audit = el(`<div class="head"><span>audit log · example</span><span>model · prompt · result</span></div>` +
-    ['layer rules · no model · 46 suggestions · 44 confirmed', 'literature table · prompt v5 · 118 rows · 111 checked', 'skeptic round 1 · method only · 6 objections · 6 checks', 'quantogram + Monte Carlo · plain Python · no model']
+    ['layer mapping · prompt v3 · 46 proposals · 44 confirmed', 'field-note phases · prompt v5 · 118 proposals · 111 confirmed', 'skeptic round 1 · 6 objections · 6 checks run', 'quantogram + Monte Carlo · plain Python · no model']
       .map((x) => `<div class="row" style="grid-template-columns:1fr;height:44px"><span>${x}</span></div>`).join(''), 'o', ui);
   audit.id = 'records'; audit.style.top = '560px'; audit.style.width = '760px';
   const auditRows = [...audit.querySelectorAll('.row')];
