@@ -14,3 +14,15 @@ __pycache__/
 
 # Downloaded open data for the reconstruction (rebuilt by recon/build_data.py)
 recon-data/
+
+# CAD reader: local environment and outputs. Excavation drawings never go in this repo.
+cad/.venv/
+.venv/
+*.dwg
+*.DWG
+*.dxf
+*.DXF
+layer_map.csv
+out/
+private/
+.pytest_cache/
