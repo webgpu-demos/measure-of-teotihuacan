@@ -86,7 +86,8 @@ export const CHAPTERS = [
         'Convert DWG to DXF with the free ODA File Converter, then read geometry and layers in Python with ezdxf.',
         'Handle lines, polylines, 3D faces and meshes; export any ACIS solids to mesh from AutoCAD first.',
         'Rotate every drawing into city-grid coordinates (15.5° east of north) so "length" and "width" mean the same thing everywhere.',
-        'Map layer names to element types (wall, stair, talud, tablero, floor). Claude proposes the mapping; the archaeologist confirms it.',
+        'Map layer names to element types (wall, stair, talud, tablero, floor). The reader suggests a mapping from built-in Spanish and English rules; the archaeologist confirms it.',
+        'The reader runs on the team’s own computer. Claude writes and tests it on made-up drawings and never sees the real ones.',
       ],
       who: ['Engineer', 'Claude'],
       widget: 'pipeline',
@@ -165,14 +166,15 @@ export const CHAPTERS = [
     kicker: 'Step 6 · Attack',
     title: 'Try to break every result',
     lines: [
-      'Step 6: AI skeptic agents try to explain each result away.',
+      'Step 6: AI skeptic agents list every way a result could be explained away.',
       'Drafting rounding. Modern restoration. Stairs sized to feet. Lucky calendar numbers.',
       'Each objection becomes a check that runs before anyone believes the peak.',
     ],
     app: {
-      summary: 'Metrology has a long history of people finding the unit they hoped for. Separate Claude agents are told to argue against each result; each objection they raise is turned into a concrete check that the pipeline runs.',
+      summary: 'Metrology has a long history of people finding the unit they hoped for. Before any real result exists, separate Claude agents are told to argue against the method: every way a peak could be explained away becomes a concrete check that the team runs on the real data.',
       points: [
-        'Skeptics see the result and the method, never the hoped-for answer.',
+        'Skeptics see only the method, the pre-registration and synthetic examples, never the team’s data or results.',
+        'Because they work on the method alone, their checks are written before the freeze and pre-registered with the test.',
         'An objection only counts once it names a test that could confirm or rule it out.',
         'The archaeologist decides which objections are archaeologically plausible.',
       ],
@@ -192,12 +194,12 @@ export const CHAPTERS = [
       'Only derived numbers ever leave the vault.',
     ],
     app: {
-      summary: 'The 2015 lidar is part of Mexico’s cultural patrimony: access runs through INAH and the data is treated as sensitive. So the first lidar task is custody, not analysis. A well-kept vault also makes the science reproducible, because every number can be traced to the exact tiles and settings that produced it.',
+      summary: 'The team’s recent lidar is part of Mexico’s cultural patrimony: access runs through INAH and the data is treated as sensitive. So the first lidar task is custody, not analysis. A well-kept vault also makes the science reproducible, because every number can be traced to the exact tiles and settings that produced it.',
       points: [
-        'One working copy, on an encrypted drive or lab server with a named access list. No public cloud, no shared drives.',
+        'One working copy, on an encrypted drive or lab server with a named access list. No shared drives, and no cloud unless the permit allows an encrypted account hosted in Mexico.',
         'Point clouds as COPC (cloud-optimized, compressed LAZ); surfaces as Cloud-Optimized GeoTIFF. Both are open formats that PDAL, GDAL and QGIS read directly.',
         'A manifest records a SHA-256 fingerprint for every tile and every derived raster, plus the processing settings. The manifest, not the data, lives in version control.',
-        'What may leave the lab: lengths, angles, counts and summary statistics. Never coordinates, point clouds or imagery. Check this against the permit before starting.',
+        'What may leave the lab, for the team’s own analysis and papers: lengths, angles, counts and summary statistics. Never coordinates, point clouds or imagery. None of it goes to Claude or any other AI service. Check this against the permit before starting.',
       ],
       who: ['Engineer', 'Archaeologist'],
       widget: 'store',
@@ -215,12 +217,13 @@ export const CHAPTERS = [
       'And a classifier trained on the team’s own ground-checked map sorts ancient lines from modern ones.',
     ],
     app: {
-      summary: 'Processing turns the vault into measurable features in four stages. The last stage is where the existing map pays off: the 2021 survey hand-mapped over 7,000 features and checked many of them on foot, which makes it a ready-made training and test set.',
+      summary: 'Processing turns the vault into measurable features in four stages. The last stage is where the existing map pays off: the 2021 study hand-mapped over 7,000 features on the 2015 lidar and checked many of them on foot. Once lined up with the team’s recent lidar, or replaced by the team’s newer mapping, it is a ready-made training and test set.',
       points: [
         'Ground: start from the delivered ground classification; re-run PDAL’s SMRF or CSF filter where modern buildings confuse it, and log every parameter in the manifest.',
-        'Surfaces: a 0.5 m bare-earth DEM, then local relief, sky-view factor and multi-directional hillshade, the same family of views the 2021 study used, plus 0.5 m contours for low features.',
+        'Surfaces: a bare-earth DEM at the finest resolution the point density supports (0.5 m or better), then local relief, sky-view factor and multi-directional hillshade, the same family of views the 2021 study used, plus 0.5 m contours for low features.',
         'Lines: edge and line-segment detection on the relief model, keeping segments within 3° of the 15.5° orientation and merging collinear pieces.',
-        'Classification: a segmentation model trained on the mapped features (1,061 architectural features and 6,314 terraces), tested on ground-verified areas it never saw. Low-confidence lines go to the archaeologist.',
+        'Classification: a segmentation model trained on the mapped features (1,061 architectural features and 6,314 terraces), after checking they line up with the recent lidar, and tested on ground-verified areas it never saw. Low-confidence lines go to the archaeologist.',
+        'Claude writes and tests every stage on synthetic terrain and INEGI’s public 1.5 m lidar; the engineer runs it on the team’s lidar in the lab.',
       ],
       who: ['Engineer', 'Claude'],
       widget: 'process',
@@ -256,17 +259,17 @@ export const CHAPTERS = [
     lines: [
       'So what does the AI actually bring?',
       'It builds: the CAD reader, the lidar pipeline and the statistics, each with tests.',
-      'It reads: Spanish layer names, field notes and old reports become tidy tables.',
+      'It reads: decades of published reports, in Spanish and English, become tidy tables.',
       'It remembers: every published dimension of the city, gathered into a second dataset.',
-      'And it doubts: skeptic agents attack each result before a reviewer can.',
+      'And it doubts: skeptic agents attack the method before a reviewer can.',
     ],
     app: {
-      summary: 'The AI is not a black box that decodes the city. It is a fast, tireless colleague that does four specific jobs, each with a human check at the end. Together they let two people run a project that would normally need a small lab.',
+      summary: 'The AI is not a black box that decodes the city. It is a fast, tireless colleague that does four specific jobs, each with a human check at the end, and none of them touches the team’s data. Together they let two people run a project that would normally need a small lab.',
       points: [
-        'Build: writes and tests the code for every step (ezdxf, PDAL and GDAL wrappers, extraction, statistics, figures), including training and evaluating the lidar classifier, always starting from synthetic data where the right answer is known.',
-        'Read: proposes layer-to-element mappings, pulls phases and conditions out of field notes, turns legacy reports into structured rows, and drafts the methods and a Spanish summary for INAH and local partners.',
+        'Build: writes and tests the code for every step (ezdxf, PDAL and GDAL wrappers, extraction, statistics, figures), including the lidar classifier’s training code, on synthetic and public data where the right answer is known. The team runs it on the real data.',
+        'Read: turns published reports into structured rows, and drafts the methods and a Spanish summary for INAH and local partners. It does not read the team’s drawings, layer names or field notes.',
         'Remember: extracts every published Teotihuacan dimension, with its citation, into an independent comparison dataset.',
-        'Doubt: runs the skeptic round in Step 6 and reports where the classifier and the statistics are least certain.',
+        'Doubt: runs the skeptic round in Step 6 on the method, and writes the checks the team runs on the real results.',
       ],
       who: ['Claude'],
       widget: 'ai',
@@ -279,15 +282,16 @@ export const CHAPTERS = [
     title: 'People decide, AI assists',
     lines: [
       'Just as important is where the AI stops.',
-      'It never decides what is ancient. The archaeologist confirms every tag it proposes.',
-      'It never sees coordinates or imagery, only lengths and labels.',
+      'It never decides what is ancient. The archaeologist has the final say on every tag.',
+      'It never sees the team’s data: not the coordinates, not the imagery, not even the lengths.',
       'Every prompt and script is logged, and the final statistics run without any AI at all.',
     ],
     app: {
-      summary: 'A reviewer will ask what the AI did. The answer has to be short and checkable: it proposed, people decided, and the test itself is classical statistics that anyone can rerun.',
+      summary: 'A reviewer will ask what the AI did. The answer has to be short and checkable: it wrote and checked code without seeing the team’s data, people decided, and the test itself is classical statistics that anyone can rerun.',
       points: [
-        'Every AI proposal is a suggestion with a status: proposed, confirmed or rejected, and who decided.',
-        'Claude never receives coordinates, point clouds, imagery or anything that locates a feature.',
+        'Every suggestion, from the layer rules or the lidar classifier, has a status: proposed, confirmed or rejected, and who decided.',
+        'Claude never receives the team’s data, raw or derived: no coordinates, point clouds or imagery, and no lengths, tags or results. It works on code, synthetic data and published sources.',
+        'The lidar classifier is an ordinary model trained and run in the lab, so no data leaves to train it.',
         'Prompts, model versions and scripts are logged with the manifest, so the whole chain can be audited.',
         'The quantogram, Monte Carlo and model comparison are ordinary code that runs without any AI, so the result does not depend on a model.',
       ],
@@ -310,7 +314,7 @@ export const CHAPTERS = [
       points: [
         'Archaeologist: original versus restored, construction phases, permits, interpretation, and the final say on every tag.',
         'Lidar and 3D engineer: the vault, the processing pipeline, the 3D viewer and the reproducible runs.',
-        'Claude: code, reading, literature, classification and skeptic review, all under the guardrails in the previous step.',
+        'Claude: code, published literature, the classifier’s training code and skeptic review of the method, all under the guardrails in the previous step.',
       ],
       widget: 'roles',
     },
@@ -351,7 +355,7 @@ export const CHAPTERS = [
       points: [
         'Weeks 1–2: synthetic buildings with a planted unit, a pure-noise control, and a building drawn in feet (the pipeline should find 30.48 cm). Output: a power analysis. In parallel, set up the lidar vault and manifest.',
         'Weeks 3–6: one structure from DWG to tagged measurements in the viewer; lidar ground check, surfaces and line detection.',
-        'Weeks 7–10: full corpus curation, pre-registration, the test, the skeptic round; train and test the lidar classifier on ground-verified areas.',
+        'Weeks 7–10: full corpus curation, the skeptic checks, pre-registration and the test; train and test the lidar classifier on ground-verified areas.',
         'Weeks 11–16: the city-scale test, the cross-scale comparison and the first draft.',
       ],
       widget: 'next',
@@ -482,7 +486,7 @@ export const SKEPTICS = [
 export const ROLES = [
   ['Archaeologist', 'Ground truth', 'Original vs restored, construction phases, permits, and what the answer means.'],
   ['Lidar & 3D engineer', 'The vault and pipeline', 'Lidar custody, processing and classification; the CAD reader and 3D viewer.'],
-  ['Claude', 'Speed and scrutiny', 'Builds, reads, remembers and doubts, always proposing and never deciding.'],
+  ['Claude', 'Speed and scrutiny', 'Builds, reads, remembers and doubts, on code and published sources only, never deciding.'],
 ];
 
 export const OUTCOMES = [
@@ -495,7 +499,7 @@ export const OUTCOMES = [
 export const WEEKS = [
   ['Weeks 1–2', 'Synthetic buildings; set up the lidar vault'],
   ['Weeks 3–6', 'One structure end to end; lidar surfaces and lines'],
-  ['Weeks 7–10', 'Full corpus, freeze, test, attack; train the classifier'],
+  ['Weeks 7–10', 'Full corpus, skeptic checks, freeze, test; train the classifier'],
   ['Weeks 11–16', 'City-scale test and the first draft'],
 ];
 
@@ -505,7 +509,9 @@ export const FIRST_CALL_QUESTIONS = [
   'Are layers organised by construction phase or element type?',
   'Which faces are restored or eroded, and who could mark them?',
   'Do the original measurement tables behind the 83 cm proposal still exist? They allow a replication before the independent test.',
-  'Do the permits allow derived measurements (no coordinates) to be processed by a cloud AI service?',
+  'For the team’s recent lidar: what area does it cover, at what point density, and how large are the files? That sets the vault’s storage.',
+  'Must the lidar stay on a lab drive, or may it go in an encrypted cloud account hosted in Mexico?',
+  'Do the 2021 mapped features line up with the recent lidar, or is there newer mapping to train the classifier on?',
   'Is everyone comfortable publishing whatever the test shows?',
   'Who on the team could spend a few hours a week curating?',
 ];

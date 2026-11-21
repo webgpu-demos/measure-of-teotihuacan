@@ -595,7 +595,7 @@ const WIDGETS = {
       ['ODA File Converter → DXF', 'Free converter; nothing is redrawn.'],
       ['ezdxf in Python', 'Read lines, polylines, 3D faces and meshes, with their layers and entity handles.'],
       ['Rotate to the city grid', 'Turn every drawing 15.5° so length and width mean the same thing everywhere.'],
-      ['Layer → element type', 'Claude proposes a mapping from layer names; the archaeologist confirms it.'],
+      ['Layer → element type', 'The reader suggests a mapping from layer names with built-in rules; the archaeologist confirms it.'],
     ];
     return h('div', { class: 'col' },
       panel('Reading the drawings', 'pipeline', h('div', { class: 'flow' }, ...steps.map(([b, t], i) => h('div', { class: 's' }, h('i', {}, String(i + 1)), h('div', {}, h('b', {}, b), h('span', {}, t)))))),
@@ -752,24 +752,24 @@ const WIDGETS = {
       ['Raw point cloud tiles', 'COPC / LAZ, 1–2 GB each', false, 'Locates every feature. Stays on the encrypted lab drive.'],
       ['Bare-earth DEM and relief rasters', 'Cloud-Optimized GeoTIFF', false, 'Imagery of the site. Stays in the vault.'],
       ['Feature coordinates', 'easting, northing per line', false, 'Would reveal where features are. Never leaves.'],
-      ['Wall-to-wall spacings', 'lengths in metres', true, 'Numbers with no location. Safe to analyse anywhere.'],
+      ['Wall-to-wall spacings', 'lengths in metres', true, 'Numbers with no location, for the team’s own analysis.'],
       ['Line orientations', 'angles in degrees', true, 'Only angles, no positions.'],
       ['Quantogram scores and thresholds', 'summary statistics', true, 'Results, not data.'],
       ['Manifest of SHA-256 fingerprints', 'text file in version control', true, 'Proves which data was used without containing it.'],
     ];
     const list = h('div', { class: 'sorter' });
     let tried = 0;
-    const score = h('p', { class: 'note', style: 'margin:10px 0 0' }, 'Try sending each item to Claude.');
+    const score = h('p', { class: 'note', style: 'margin:10px 0 0' }, 'Try taking each item out of the lab.');
     ITEMS.forEach(([name, kind, ok, why]) => {
-      const chip = h('span', { class: 'verdict-chip wait' }, 'not sent');
+      const chip = h('span', { class: 'verdict-chip wait' }, 'in the lab');
       const btn = h('button', { class: 'btn', type: 'button', onclick: () => {
         chip.className = `verdict-chip ${ok ? 'ok' : 'no'}`;
         chip.textContent = ok ? 'allowed' : 'blocked';
         note.textContent = why;
         btn.remove();
         tried++;
-        if (tried === ITEMS.length) score.textContent = 'Three of seven stay in the lab. Everything Claude sees is a number without a place.';
-      } }, 'Send to Claude');
+        if (tried === ITEMS.length) score.textContent = 'Three of seven stay in the lab. What leaves is numbers without a place, for the team’s analysis and papers. None of it goes to Claude.';
+      } }, 'Take out of the lab');
       const note = h('small', {}, kind);
       list.append(h('div', { class: 'item' }, h('div', {}, h('b', {}, name), note), h('div', { style: 'display:flex;gap:8px;align-items:center' }, chip, btn)));
     });
@@ -790,10 +790,10 @@ exports/   (the only folder that may leave)
     const STAGES = [
       ['Points', 'Classified point cloud (ground, buildings, vegetation)', 'tiles from the vault', 'PDAL readers.copc, filters.range', 'Check the delivered ground class against field photos before trusting it.'],
       ['Ground', 'Bare-earth points', 'all returns', 'PDAL filters.smrf or filters.csf where modern buildings confuse the delivered class', 'Parameters are logged in the manifest so the step can be rerun exactly.'],
-      ['Surface', '0.5 m digital elevation model', 'ground points', 'PDAL writers.gdal (IDW / TIN), GDAL to COG', 'Matches the scale at which the 2021 study saw low walls.'],
+      ['Surface', 'Bare-earth elevation model, 0.5 m or finer', 'ground points', 'PDAL writers.gdal (IDW / TIN), GDAL to COG', 'Matches the scale at which the 2021 study saw low walls.'],
       ['Relief', 'Local relief, sky-view factor, multi-directional hillshade, 0.5 m contours', 'DEM', 'RVT (Relief Visualization Toolbox), GDAL', 'These make features under 1–1.5 m high visible, the hardest ones in 2021.'],
       ['Lines', 'Grid-aligned line segments', 'relief rasters', 'Edge detection + line-segment detector (OpenCV / scikit-image), collinear merging', 'Keep segments within 3° of 15.5° or 105.5°; the orientation histogram should show two sharp peaks.'],
-      ['Classes', 'Each line labelled ancient, modern or unsure', 'lines + relief patches', 'Segmentation model trained on the 2021 mapped features; held-out ground-verified areas for testing', 'Unsure lines go to the archaeologist; accuracy is reported per class before any measuring.'],
+      ['Classes', 'Each line labelled ancient, modern or unsure', 'lines + relief patches', 'Segmentation model trained in the lab on the 2021 mapped features (checked against the recent lidar) or newer mapping; held-out ground-verified areas for testing', 'Unsure lines go to the archaeologist; accuracy is reported per class before any measuring.'],
     ];
     let cur = 0;
     const bar = h('div', { class: 'stagebar', role: 'group', 'aria-label': 'Processing stage' });
@@ -834,10 +834,10 @@ exports/   (the only folder that may leave)
 
   ai() {
     const JOBS = [
-      ['Builds', 'Code with tests', ['DXF reader and measurement extractor', 'PDAL / GDAL lidar pipeline', 'Line classifier: training and evaluation', 'Quantogram, Monte Carlo, figures'], 'Check: every module passes on synthetic data with a planted answer first.'],
-      ['Reads', 'Messy to tidy', ['Spanish CAD layer names → element types', 'Field notes → phases and conditions', 'Legacy reports → structured rows', 'Draft methods and a Spanish summary'], 'Check: each proposal is confirmed or rejected by the archaeologist.'],
+      ['Builds', 'Code with tests', ['DXF reader and measurement extractor', 'PDAL / GDAL lidar pipeline', 'Line classifier: training code', 'Quantogram, Monte Carlo, figures'], 'Check: every module passes on synthetic data with a planted answer first.'],
+      ['Reads', 'Messy to tidy', ['Published reports → structured rows', 'Sources in Spanish and English', 'Draft methods and a Spanish summary', 'Never the team’s drawings or notes'], 'Check: every row cites its source, so anyone can verify it.'],
       ['Remembers', 'A second dataset', ['Every published Teotihuacan dimension', 'With citation, page and figure', 'Units normalised to metres', 'Flagged where sources disagree'], 'Check: a random 10% of rows re-checked by hand.'],
-      ['Doubts', 'Skeptic agents', ['Argues against each result', 'Turns objections into runnable checks', 'Reports where the classifier is least sure', 'Never sees the hoped-for answer'], 'Check: the archaeologist decides which objections are plausible.'],
+      ['Doubts', 'Skeptic agents', ['Argues against the method', 'Turns objections into runnable checks', 'Checks are frozen with the pre-registration', 'Never sees the team’s data or results'], 'Check: the archaeologist decides which objections are plausible.'],
     ];
     return h('div', { class: 'col' },
       h('div', { class: 'jobs' }, ...JOBS.map(([e, b, items, chk]) => h('div', { class: 'job' }, h('em', {}, e), h('b', {}, b), h('ul', {}, ...items.map((x) => h('li', {}, x))), h('div', { class: 'check' }, chk)))),
@@ -846,14 +846,14 @@ exports/   (the only folder that may leave)
 
   guard() {
     const PROPOSALS = [
-      ['Layer "MURO_F3"', 'wall, phase 3'],
-      ['Layer "ESC_PONIENTE"', 'stair, west face'],
-      ['Field note, unit 14', 'restored in the 1960s'],
-      ['Line #2291', 'ancient (confidence 0.58)'],
+      ['Layer "MURO_F3"', 'wall, phase 3', 'Layer rules'],
+      ['Layer "ESC_PONIENTE"', 'stair, west face', 'Layer rules'],
+      ['Line #1874', 'modern (confidence 0.71)', 'Classifier'],
+      ['Line #2291', 'ancient (confidence 0.58)', 'Classifier'],
     ];
     const log = h('div', { class: 'note', style: 'margin-top:10px' }, 'Decisions appear here, with who made them.');
     const lines = [];
-    const gate = h('div', { class: 'gate' }, ...PROPOSALS.map(([what, prop]) => {
+    const gate = h('div', { class: 'gate' }, ...PROPOSALS.map(([what, prop, src]) => {
       const st = h('span', { class: 'verdict-chip wait' }, 'proposed');
       const decide = (ok) => {
         st.className = `verdict-chip ${ok ? 'ok' : 'no'}`; st.textContent = ok ? 'confirmed' : 'rejected';
@@ -862,13 +862,13 @@ exports/   (the only folder that may leave)
         log.replaceChildren(...lines.map((l) => h('div', {}, l)));
       };
       const btns = h('div', { class: 'btns' }, h('button', { class: 'btn', type: 'button', onclick: () => decide(true) }, 'Confirm'), h('button', { class: 'btn', type: 'button', onclick: () => decide(false) }, 'Reject'));
-      return h('div', { class: 'row' }, h('div', {}, h('b', {}, what), h('small', {}, `Claude proposes: ${prop}`)), h('div', { style: 'display:flex;gap:8px;align-items:center' }, st, btns));
+      return h('div', { class: 'row' }, h('div', {}, h('b', {}, what), h('small', {}, `${src}: ${prop}`)), h('div', { style: 'display:flex;gap:8px;align-items:center' }, st, btns));
     }));
     return h('div', { class: 'col' },
       panel('You are the archaeologist', 'try it', gate, log),
-      panel('Never sent to the AI', 'guardrails', h('ul', { class: 'points' },
-        h('li', {}, 'Coordinates, point clouds, rasters or imagery of the site.'),
-        h('li', {}, 'Final verdicts: the AI proposes, people decide.'),
+      panel('Never sent to Claude', 'guardrails', h('ul', { class: 'points' },
+        h('li', {}, 'Any of the team’s data: coordinates, point clouds, rasters, imagery, lengths, tags or results.'),
+        h('li', {}, 'Final verdicts: software suggests, people decide.'),
         h('li', {}, 'The test itself: the quantogram and Monte Carlo are plain code that runs with no model, so anyone can rerun the result.'))));
   },
 
@@ -901,15 +901,15 @@ exports/   (the only folder that may leave)
     const st = s('text', { x: 130, y: 288, fill: 'var(--muted)', 'font-size': 12.5 }); st.textContent = '≈100 m'; sb.append(st); svgEl.append(sb);
     return panel('Spacing between parallel walls', 'schematic', svgEl,
       h('div', { class: 'legend' }, h('span', {}, h('i', { style: 'background:var(--jade)' }), 'ancient, on the grid'), h('span', {}, h('i', { style: 'background:var(--muted)' }), 'other features'), h('span', {}, h('i', { style: 'background:var(--ochre)' }), 'transect and crossings')),
-      h('p', { class: 'note', style: 'margin:10px 0 0' }, 'Illustration only. The real analysis runs on the lab’s copy of the 2015 lidar and the ground-verified feature classes.'));
+      h('p', { class: 'note', style: 'margin:10px 0 0' }, 'Illustration only. The real analysis runs on the team’s recent lidar, in the lab, with the ground-verified feature classes.'));
   },
 
   roles() {
     return h('div', { class: 'col' },
       h('div', { class: 'cards' }, ...ROLES.map(([e, b, t]) => h('div', { class: 'card' }, h('em', {}, e), h('b', {}, b), h('span', {}, t)))),
       panel('Where the data lives', 'data handling', h('div', { class: 'two', style: 'margin-top:0' },
-        h('div', {}, h('b', {}, 'Stays in the lab'), h('ul', {}, h('li', {}, 'AutoCAD plans and DXF exports'), h('li', {}, 'Point clouds, DEMs, imagery'), h('li', {}, 'Coordinates of any feature'))),
-        h('div', {}, h('b', {}, 'Goes to Claude'), h('ul', {}, h('li', {}, 'Lengths, tags and phases'), h('li', {}, 'Layer names for mapping'), h('li', {}, 'Code, logs and draft text'))))));
+        h('div', {}, h('b', {}, 'Stays in the lab'), h('ul', {}, h('li', {}, 'AutoCAD plans and DXF exports'), h('li', {}, 'Point clouds, DEMs, imagery'), h('li', {}, 'Coordinates of any feature'), h('li', {}, 'Lengths, tags and results'))),
+        h('div', {}, h('b', {}, 'Goes to Claude'), h('ul', {}, h('li', {}, 'Code and its tests'), h('li', {}, 'Synthetic and public data'), h('li', {}, 'Published papers and reports'))))));
   },
 
   outcomes() {
