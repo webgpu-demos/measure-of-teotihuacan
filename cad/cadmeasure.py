@@ -32,7 +32,6 @@ import numpy as np
 VERSION = '0.1'
 ACIS = {'3DSOLID', 'BODY', 'REGION', 'SURFACE', 'EXTRUDEDSURFACE', 'LOFTEDSURFACE', 'REVOLVEDSURFACE',
         'SWEPTSURFACE', 'PLANESURFACE', 'NURBSURFACE'}
-CURVES = {'ARC', 'CIRCLE', 'ELLIPSE', 'SPLINE', 'HELIX'}
 INSUNITS = {1: 0.0254, 2: 0.3048, 4: 0.001, 5: 0.01, 6: 1.0, 7: 1000.0, 14: 0.1}
 UNIT_NAMES = {'m': 1.0, 'cm': 0.01, 'mm': 0.001, 'dm': 0.1, 'in': 0.0254, 'ft': 0.3048}
 COLUMNS = ['id', 'drawing', 'structure', 'layer', 'element', 'phase', 'condition', 'confirmed', 'kind', 'axis', 'value_m',
@@ -152,7 +151,7 @@ def load(path):
                      'Install it, or batch-convert the DWGs to DXF with it and point this tool at the DXFs.')
         return odafc.readfile(str(path))
     from ezdxf import recover
-    doc, auditor = recover.readfile(str(path))
+    doc, _ = recover.readfile(str(path))
     return doc
 
 
@@ -363,10 +362,15 @@ def axis_runs(ids, a, perp, P0, P1, tol, join):
                 cur.append(k)
                 e = max(e, hi[k])
             else:
-                runs.append((s, e, ids[cur], mid[cur].mean(axis=0)))
+                runs.append((s, e, ids[cur]))
                 cur, s, e = [k], lo[k], hi[k]
-        runs.append((s, e, ids[cur], mid[cur].mean(axis=0)))
+        runs.append((s, e, ids[cur]))
     return runs
+
+
+def join_handles(hs):
+    """The first eight handles, then how many more."""
+    return ';'.join(hs[:8]) + (f';+{len(hs) - 8}' if len(hs) > 8 else '')
 
 
 def overlap(A, B):
@@ -512,8 +516,7 @@ def measure(geo, scale, mapping, grid=None, tol_deg=3.0, tol=0.02, min_len=0.05,
                 'confirmed': int(bool(r['confirmed']))}
 
     def hlist(ids):
-        hs = sorted({x for i in ids for x in handles[i]})
-        return ';'.join(hs[:8]) + (f';+{len(hs) - 8}' if len(hs) > 8 else '')
+        return join_handles(sorted({x for i in ids for x in handles[i]}))
 
     records = []
     AX = {'u': 0, 'v': 1, 'z': 2}
@@ -533,7 +536,7 @@ def measure(geo, scale, mapping, grid=None, tol_deg=3.0, tol=0.02, min_len=0.05,
             lay_runs[ax] = runs
             # Parallel edges spanning the same interval (top/bottom/front/back of one prism) are one dimension.
             groups = []
-            for s, e, sid, _ in sorted(runs, key=lambda r: (r[0], r[1])):
+            for s, e, sid in sorted(runs, key=lambda r: (r[0], r[1])):
                 for g in groups:
                     if abs(g[0] - s) <= tol and abs(g[1] - e) <= tol:
                         g[2].append(sid)
@@ -551,7 +554,6 @@ def measure(geo, scale, mapping, grid=None, tol_deg=3.0, tol=0.02, min_len=0.05,
         for ax, across in (('u', 1), ('v', 0)):
             if ax not in lay_runs:
                 continue
-            a = AX[ax]
             pos = np.array([(P0[r[2], across] + P1[r[2], across]).mean() / 2 for r in lay_runs[ax]])
             groups = cluster(np.arange(len(pos)), pos, tol)
             lines = [(pos[g].mean(), union([(lay_runs[ax][i][0], lay_runs[ax][i][1]) for i in g], tol),
@@ -602,7 +604,7 @@ def measure(geo, scale, mapping, grid=None, tol_deg=3.0, tol=0.02, min_len=0.05,
             for lo, hi, hds, nseg in groups:
                 records.append(base | {'kind': 'extent', 'axis': ax, 'value_m': hi - lo, 'copies': len(hds),
                                              'segments': nseg, 'off_grid_deg': '', 'incl_deg': '',
-                                             'handles': ';'.join(sorted(hds)[:8]) + (f';+{len(hds) - 8}' if len(hds) > 8 else '')})
+                                             'handles': join_handles(sorted(hds))})
     per_layer = Counter(r['layer'] for r in records)
     for layer in sorted(set(layers.tolist())):
         on = layers == layer
@@ -783,17 +785,22 @@ def analysis_values(records, pairs=TEST_SET, lo=1.0, hi=40.0, distinct=0.01,
     return np.array(out)
 
 
+def confirmed_map(drawings):
+    """Every layer's suggestion, marked confirmed: stands in for the archaeologist on made-up drawings."""
+    mapping = {}
+    for path in drawings:
+        _, geo = read_drawing(path)
+        for layer in geo.layer_types:
+            mapping[layer] = {**suggest(layer), 'confirmed': True}
+    return mapping
+
+
 def trial(unit, seed, quanto, make_set):
     """One made-up drawing set through the whole chain; returns the quantogram verdict."""
     with tempfile.TemporaryDirectory() as tmp:
         truth = make_set(tmp, unit=unit, seed=seed)
         drawings = sorted(Path(tmp).glob('*.dxf'))
-        mapping = {}
-        for path in drawings:
-            _, geo = read_drawing(path)
-            for layer in geo.layer_types:                       # stands in for the archaeologist's confirmation
-                mapping[layer] = {**suggest(layer), 'confirmed': True}
-        records, summary = extract(drawings, mapping, Path(tmp) / 'out', quiet=True)
+        records, summary = extract(drawings, confirmed_map(drawings), Path(tmp) / 'out', quiet=True)
     missing = [f'{name}.{key}' for name, t in truth.items() for key, v in t.items()
                if key not in ('units', 'grid_deg')
                and not any(r['drawing'] == f'{name}.dxf' and abs(r['value_m'] - v) <= 0.02 for r in records)]

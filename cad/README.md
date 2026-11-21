@@ -89,7 +89,7 @@ The test uses made-up drawings in metres and centimetres, rotated onto the city 
 
 **Statistics warning:** the standard quantogram noise bar (Kendall's ±15% jitter) assumes every length is independent. Lengths read off drawings are not: a few design choices (one wall thickness, one room depth, a mirrored plan) drive many measured lengths.
 - **Counting every record:** on made-up drawings with **no unit**, it finds a "unit" every time.
-- **Distinct gaps and heights only** (the `TEST_SET` in `cadmeasure.py`): it still crosses the 1% bar in about one set in eight (17 of 100 in one calibration run).
+- **Distinct gaps and heights only** (the `TEST_SET` in `cadmeasure.py`): it still crosses the 1% bar in about one set in eight (11 of 100 for seeds 1–100).
 - **Independent random lengths:** the same bar is right (1 in 100).
 
 So the unit test needs a null that keeps the drawings' structure before any real result is called significant. `tests/test_cadmeasure.py::test_noise_bar_is_right_for_lengths_from_drawings` is the target. It is marked as an expected failure until a method passes it.

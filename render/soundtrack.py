@@ -124,7 +124,7 @@ def main():
     music = sosfilt(sos, music, axis=1)
 
     hits = np.zeros((2, total))
-    for i, ch in enumerate(tl['chapters'][1:], 1):
+    for ch in tl['chapters'][1:]:
         s = int(ch['start'] * SR)
         bn = int(4 * SR)
         bm = boom(bn) * 0.55

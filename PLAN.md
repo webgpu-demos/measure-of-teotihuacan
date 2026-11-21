@@ -6,7 +6,7 @@ Generated from `docs/story.js`, the same storyboard that drives the film (`docs/
 
 ## The plan in one paragraph
 
-Teotihuacan’s lidar is a poor fit for “find the lost city”: the city is known, and most of the valley floor has been rebuilt on top of it along the same orientation. The excavation team’s 3D AutoCAD plans are a better starting point for a different question: did the builders share a standard unit of length? The plan turns the drawings into a large, source-linked set of dimensions, has the archaeologist tag them blind, freezes and pre-registers the dataset, tests named hypotheses with a cosine quantogram, Monte Carlo thresholds and Bayesian model comparison, and has Claude skeptic agents attack every result. The lidar is kept in an encrypted, fingerprinted vault, processed into a bare-earth surface and grid-aligned lines, classified ancient or modern with a model trained on the team’s own ground-checked map, and measured for a second, city-scale test. Claude builds, reads, remembers and doubts, but people make every call, it never sees coordinates, and the final statistics run without any AI. Every outcome is publishable because the test is fixed in advance.
+Teotihuacan’s lidar is a poor fit for “find the lost city”: the city is known, and most of the valley floor has been rebuilt on top of it along the same orientation. The excavation team’s 3D AutoCAD plans are a better starting point for a different question: did the builders share a standard unit of length? The plan turns the drawings into a large, source-linked set of dimensions, has the archaeologist tag them blind, freezes and pre-registers the dataset, tests named hypotheses with a cosine quantogram, Monte Carlo thresholds and Bayesian model comparison, and has Claude skeptic agents attack every result. The team’s recent lidar is kept in an encrypted, fingerprinted vault, processed into a bare-earth surface and grid-aligned lines, classified ancient or modern with a model trained on the team’s own ground-checked map, and measured for a second, city-scale test. Claude builds, reads, remembers and doubts, but people make every call, it never sees coordinates, imagery or the raw drawings and lidar, and the final statistics run without any AI. Every outcome is publishable because the test is fixed in advance.
 
 ## Steps
 
@@ -68,7 +68,8 @@ The excavation team’s AutoCAD plans hold thousands of measured edges that nobo
 - Convert DWG to DXF with the free ODA File Converter, then read geometry and layers in Python with ezdxf.
 - Handle lines, polylines, 3D faces and meshes; export any ACIS solids to mesh from AutoCAD first.
 - Rotate every drawing into city-grid coordinates (15.5° east of north) so "length" and "width" mean the same thing everywhere.
-- Map layer names to element types (wall, stair, talud, tablero, floor). Claude proposes the mapping; the archaeologist confirms it.
+- Map layer names to element types (wall, stair, talud, tablero, floor). The reader suggests a mapping from built-in Spanish and English rules and Claude proposes the rest; the archaeologist confirms every one.
+- The reader runs on the team’s own computer. Claude writes and tests it on made-up drawings; it sees the layer names and lengths, never the drawings themselves.
 
 Who: Engineer, Claude
 
@@ -149,9 +150,9 @@ Who: Claude, Archaeologist
 > Every tile is saved in an open format and fingerprinted, so each result can name the exact data it used.
 > Only derived numbers ever leave the vault.
 
-The 2015 lidar is part of Mexico’s cultural patrimony: access runs through INAH and the data is treated as sensitive. So the first lidar task is custody, not analysis. A well-kept vault also makes the science reproducible, because every number can be traced to the exact tiles and settings that produced it.
+The team’s recent lidar is part of Mexico’s cultural patrimony: access runs through INAH and the data is treated as sensitive. So the first lidar task is custody, not analysis. A well-kept vault also makes the science reproducible, because every number can be traced to the exact tiles and settings that produced it.
 
-- One working copy, on an encrypted drive or lab server with a named access list. No public cloud, no shared drives.
+- One working copy, on an encrypted drive or lab server with a named access list. No shared drives, and no cloud unless the permit allows an encrypted account hosted in Mexico.
 - Point clouds as COPC (cloud-optimized, compressed LAZ); surfaces as Cloud-Optimized GeoTIFF. Both are open formats that PDAL, GDAL and QGIS read directly.
 - A manifest records a SHA-256 fingerprint for every tile and every derived raster, plus the processing settings. The manifest, not the data, lives in version control.
 - What may leave the lab: lengths, angles, counts and summary statistics. Never coordinates, point clouds or imagery. Check this against the permit before starting.
@@ -167,12 +168,13 @@ Who: Engineer, Archaeologist
 > A line detector then finds every edge that runs with the city’s grid.
 > And a classifier trained on the team’s own ground-checked map sorts ancient lines from modern ones.
 
-Processing turns the vault into measurable features in four stages. The last stage is where the existing map pays off: the 2021 survey hand-mapped over 7,000 features and checked many of them on foot, which makes it a ready-made training and test set.
+Processing turns the vault into measurable features in four stages. The last stage is where the existing map pays off: the 2021 study hand-mapped over 7,000 features on the 2015 lidar and checked many of them on foot. Once lined up with the team’s recent lidar, or replaced by the team’s newer mapping, it is a ready-made training and test set.
 
 - Ground: start from the delivered ground classification; re-run PDAL’s SMRF or CSF filter where modern buildings confuse it, and log every parameter in the manifest.
-- Surfaces: a 0.5 m bare-earth DEM, then local relief, sky-view factor and multi-directional hillshade, the same family of views the 2021 study used, plus 0.5 m contours for low features.
+- Surfaces: a bare-earth DEM at the finest resolution the point density supports (0.5 m or better), then local relief, sky-view factor and multi-directional hillshade, the same family of views the 2021 study used, plus 0.5 m contours for low features.
 - Lines: edge and line-segment detection on the relief model, keeping segments within 3° of the 15.5° orientation and merging collinear pieces.
-- Classification: a segmentation model trained on the mapped features (1,061 architectural features and 6,314 terraces), tested on ground-verified areas it never saw. Low-confidence lines go to the archaeologist.
+- Classification: a segmentation model trained on the mapped features (1,061 architectural features and 6,314 terraces), after checking they line up with the recent lidar, and tested on ground-verified areas it never saw. Low-confidence lines go to the archaeologist.
+- Claude writes and tests every stage on synthetic terrain and INEGI’s public 1.5 m lidar; the engineer runs it on the team’s lidar in the lab.
 
 Who: Engineer, Claude
 
@@ -205,7 +207,7 @@ Who: Engineer, Archaeologist
 
 The AI is not a black box that decodes the city. It is a fast, tireless colleague that does four specific jobs, each with a human check at the end. Together they let two people run a project that would normally need a small lab.
 
-- Build: writes and tests the code for every step (ezdxf, PDAL and GDAL wrappers, extraction, statistics, figures), including training and evaluating the lidar classifier, always starting from synthetic data where the right answer is known.
+- Build: writes and tests the code for every step (ezdxf, PDAL and GDAL wrappers, extraction, statistics, figures), including the lidar classifier’s training and evaluation code, always starting from synthetic and public data where the right answer is known. The team runs it on the real lidar.
 - Read: proposes layer-to-element mappings, pulls phases and conditions out of field notes, turns legacy reports into structured rows, and drafts the methods and a Spanish summary for INAH and local partners.
 - Remember: extracts every published Teotihuacan dimension, with its citation, into an independent comparison dataset.
 - Doubt: runs the skeptic round in Step 6 and reports where the classifier and the statistics are least certain.
@@ -223,8 +225,9 @@ Who: Claude
 
 A reviewer will ask what the AI did. The answer has to be short and checkable: it proposed, people decided, and the test itself is classical statistics that anyone can rerun.
 
-- Every AI proposal is a suggestion with a status: proposed, confirmed or rejected, and who decided.
-- Claude never receives coordinates, point clouds, imagery or anything that locates a feature.
+- Every suggestion, from Claude, the layer rules or the lidar classifier, has a status: proposed, confirmed or rejected, and who decided.
+- Claude never receives the drawings, point clouds, coordinates, imagery or anything that locates a feature.
+- The lidar classifier is an ordinary model trained and run in the lab, so no raw lidar leaves to train it.
 - Prompts, model versions and scripts are logged with the manifest, so the whole chain can be audited.
 - The quantogram, Monte Carlo and model comparison are ordinary code that runs without any AI, so the result does not depend on a model.
 
@@ -320,7 +323,9 @@ The first two weeks need nothing from the excavation archive except one sample d
 - [ ] Are layers organised by construction phase or element type?
 - [ ] Which faces are restored or eroded, and who could mark them?
 - [ ] Do the original measurement tables behind the 83 cm proposal still exist? They allow a replication before the independent test.
-- [ ] Do the permits allow derived measurements (no coordinates) to be processed by a cloud AI service?
+- [ ] For the team’s recent lidar: what area does it cover, at what point density, and how large are the files? That sets the vault’s storage.
+- [ ] Must the lidar stay on a lab drive, or may it go in an encrypted cloud account hosted in Mexico?
+- [ ] Do the 2021 mapped features line up with the recent lidar, or is there newer mapping to train the classifier on?
 - [ ] Is everyone comfortable publishing whatever the test shows?
 - [ ] Who on the team could spend a few hours a week curating?
 

@@ -6,7 +6,7 @@
 
 Joining every lidar point with triangles is the natural first try. On a made-up site with a known true ground, it goes wrong in three ways:
 
-1. **Not every point is ground.** Roofs, tree crowns, birds and multipath returns all become part of the surface. Under houses and trees the triangles were 4–5 m off, and one bird put the pyramid's top 59 m too high.
+1. **Not every point is ground.** Roofs, tree crowns, birds and multipath returns all become part of the surface. Under houses and trees the triangles were 4.4 and 5.3 m off, and one bird put the pyramid's top at 59 m instead of 16 m.
 2. **Every point's noise stays in.** A triangle passes exactly through each point, so the few centimetres of noise in every return become a crumpled surface. Averaging the points in each cell removes most of it.
 3. **The surface can't be sharper than the points.** At 10 points per m², points are about 30 cm apart. No method can recover detail smaller than that from the same points: not a filter, not a finer grid, not AI. Anything finer that appears is invented.
 

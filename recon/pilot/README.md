@@ -12,7 +12,7 @@ Code: [`recon/lattice.py`](../lattice.py). It uses only public data (INEGI, Open
 - **Two tests.**
   - *Local:* separations between all pairs of parallel edges that face each other (5–600 m apart), scored with Kendall's cosine quantogram for spacings of 6–60 m.
   - *Global:* the periodogram of all edge positions along each grid axis, 6–300 m. It asks whether the whole city sits on one ruler with one origin.
-- **Chance bar from fake cities.** The same edges are cut into 300 m tiles, and each tile is stretched (±15%) and shifted at random. Each tile keeps its own shapes, but any spacing shared between tiles is broken. The tallest peak anywhere in each fake scan sets the 95% and 99% bars, which accounts for having looked at every spacing.
+- **Chance bar from fake cities.** The same edges are cut into 300 m tiles. For the local test each tile is stretched (±15%) and shifted (±50 m) at random; for the global test each tile is shifted (±1 km) at random. Each tile keeps its own shapes, but any spacing shared between tiles is broken. The tallest peak anywhere in each fake scan sets the 95% and 99% bars, which accounts for having looked at every spacing.
 - **Fixed in advance:** the target spacings (`TARGETS`) and the decision rule. A spacing counts as found only if it clears the 99% bar for the whole box and also reaches p < 0.05 at the same spacing in the west and east halves, scanned separately.
 
 ## Check 1: synthetic cities with a known answer
@@ -90,7 +90,7 @@ Across all six datasets and both tests, 5 of 114 targeted checks reach p < 0.05;
 
 ## Next steps
 
-1. The team runs the same code on its recent lidar, on the lab machine. Results stay with the team; nothing is sent to a cloud service.
+1. The team runs the same code on its recent lidar, on the lab machine. The lidar, its surfaces and any maps stay with the team; the spacing results are derived numbers, so they may go to Claude.
 2. Classify edges as ancient or modern there, then rerun on ancient edges only. The 2021 mapped features came from the 2015 survey, so check they line up with the new lidar before training on them. The power figures above say how many ancient edges the test needs.
 3. Do the building-scale test on the excavation CAD. That is the direct test of 83 cm.
 4. Pre-register the monument pairs and endpoint rule for the long-distance claims (the 1,440 and 2,600 TMU distances).
@@ -98,7 +98,7 @@ Across all six datasets and both tests, 5 of 114 targeted checks reach p < 0.05;
 ## Rerun
 
 ```bash
-python3 -I recon/build_data.py      # downloads and prepares recon-data/ (if not already there)
+python3 -I recon/build_data.py      # downloads recon-data/ if missing; also rewrites docs/reconstruction/data/
 python3 -I recon/lattice.py real    # about 1 minute on an idle machine
 python3 -I recon/lattice.py synth
 python3 -I recon/lattice.py power

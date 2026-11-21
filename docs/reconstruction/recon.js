@@ -297,11 +297,12 @@ export async function createRecon(canvas, opts = {}) {
     const g = placeGroup(m.cx, m.cy, m.base - Y0 - 0.5);
     const H = m.height + 0.5;
     stepped(g, { w: m.w * 1.03, d: m.d * 1.03, heights: [0.3, 0.27, 0.22, 0.13, 0.08].map((f) => f * H), talud: 0.92, slope: 0.95, overhang: 0.2, margin: 2.5, stair: { width: 20, ext: 6 }, temple: { w: 22, d: 22, h: 7 } }, info);
+    const [su, sv] = localToGrid(m.cx, m.cy);
     // Adosada platform in front
-    const ga = placeGroup(...gridToLocal(localToGrid(m.cx, m.cy)[0] - m.w / 2 - 30, localToGrid(m.cx, m.cy)[1]), heightAt(...gridToLocal(localToGrid(m.cx, m.cy)[0] - m.w / 2 - 30, localToGrid(m.cx, m.cy)[1])) - 0.5);
+    const [adx, ady] = gridToLocal(su - m.w / 2 - 30, sv);
+    const ga = placeGroup(adx, ady, heightAt(adx, ady) - 0.5);
     stepped(ga, { w: 46, d: 70, heights: [6, 4.5], talud: 0.6, slope: 0.4, cls: 'excavated' }, { title: 'Adosada of the Sun Pyramid', rows: [['Form', 'from excavation plans', 'excavated']] });
     // Enclosing platform
-    const [su, sv] = localToGrid(m.cx, m.cy);
     for (const [du, dv, len, horiz] of [[0, 175, 360, true], [0, -175, 360, true], [175, 0, 330, false]]) {
       const [x, y] = gridToLocal(su + du, sv + dv);
       const gp = placeGroup(x, y, heightAt(x, y) - 0.6);
@@ -436,8 +437,9 @@ export async function createRecon(canvas, opts = {}) {
   const zone = S.sites.zone.poly;
   const inZone = (x, y) => { let c = false; for (let i = 0, j = zone.length - 1; i < zone.length; j = i++) { const [xi, yi] = zone[i], [xj, yj] = zone[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; };
 
+  // Unit geometries are 1 x 1 in plan. The compound keeps real heights (instances scale x and z only);
+  // the temple is about 1 unit tall, and instances scale its height too.
   const unitCompound = compoundParts(1, 1, 3.4, { stucco: NATURAL.stucco, red: NATURAL.red, roof: NATURAL.roof });
-  // The unit geometry is 1 x 1 in plan with real heights; instances scale x and z only.
   const unitTemple = (() => { const gs = []; let y = 0, w = 1; for (const th of [0.45, 0.35, 0.2]) { const g = frustumGeo(w, w, w - 0.16, w - 0.16, th * 0.7); g.translate(0, y, 0); gs.push(colorize(g, NATURAL.stucco)); gs.push(colorize(boxGeo(w - 0.12, th * 0.3, w - 0.12, 0, y + th * 0.7), NATURAL.red)); y += th; w -= 0.24; } gs.push(colorize(boxGeo(0.34, 0.25, 0.34, 0, y), NATURAL.temple)); return mergeGeometries(gs, false); })();
 
   const lidarCompounds = [], lidarTemples = [], fill = [];
@@ -486,7 +488,6 @@ export async function createRecon(canvas, opts = {}) {
     bare: { label: 'Bare earth', sub: 'lidar ground', dsm: 0, lidar: 1, recon: false },
     then: { label: 'c. 450 CE', sub: 'reconstruction', dsm: 0, lidar: 0, recon: true },
   };
-  let evidence = false;
   function applyMode(key) {
     const M = MODES[key];
     for (const t of terrains) { t.material.userData.u.uDsmMix.value = M.dsm; t.material.userData.u.uLidar.value = M.lidar; }
@@ -498,7 +499,6 @@ export async function createRecon(canvas, opts = {}) {
     hemi.intensity = M.lidar ? 1.3 : 0.9;
   }
   function setEvidence(on) {
-    evidence = on;
     recon.traverse((o) => {
       if (!o.isMesh || !o.userData.cls) return;
       if (o.userData.instanced || o.userData.vc) {
@@ -541,7 +541,7 @@ export async function createRecon(canvas, opts = {}) {
     if (!hit) return null;
     const o = hit.object;
     const info = o.userData.info;
-    return { ...info, cls: o.userData.cls, part: info.part };
+    return { ...info, cls: o.userData.cls };
   }
 
   // Render: one or two views split by a divider (fraction of width)
@@ -590,7 +590,7 @@ export async function createRecon(canvas, opts = {}) {
   renderer.setAnimationLoop(opts.manual ? null : frame);
 
   return {
-    MODES, VIEWS, CLASSES, counts, crossWalls: crossWalls.length,
+    MODES, VIEWS, counts,
     setSplit: (f) => { split = Math.max(0, Math.min(1, f)); }, getSplit: () => split,
     setLeft: (k) => { left = k; }, setRight: (k) => { right = k; }, setSingle: (s) => { single = s; },
     setEvidence, goTo, pick, frame, renderer, camera, controls,

@@ -1,29 +1,21 @@
 // Screenshots of the reconstruction viewer in headless Chrome, for checking views.
 //   node recon/shot.mjs avenue:today:then city:bare:then sun:then:then:ev ...
-// Each argument is view:left:right[:ev][:one]. Writes recon-data/shots/<arg>.png and prints frame times.
+// Each argument is view:left:right[:ev][:one]. Writes recon-data/shots/<arg with ':' -> '_'>.png and prints frame times.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { docsHandler, CHROME } from '../render/serve.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { default: puppeteer } = await import(pathToFileURL(path.join(ROOT, 'render', 'node_modules', 'puppeteer-core', 'lib', 'esm', 'puppeteer', 'puppeteer-core.js')).href);
-const DOCS = path.join(ROOT, 'docs');
 const OUT = path.join(ROOT, 'recon-data', 'shots');
 fs.mkdirSync(OUT, { recursive: true });
-const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.css': 'text/css' };
-const server = http.createServer((req, res) => {
-  let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
-  if (p.endsWith('/')) p += 'index.html';
-  const f = path.join(DOCS, p);
-  if (!f.startsWith(DOCS) || !fs.existsSync(f)) { res.writeHead(404); res.end(); return; }
-  res.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' });
-  fs.createReadStream(f).pipe(res);
-});
+const server = http.createServer(docsHandler);
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const W = Number(process.env.W || 1600), H = Number(process.env.H || 900);
 const browser = await puppeteer.launch({
-  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true,
+  executablePath: CHROME, headless: true,
   args: ['--ignore-gpu-blocklist', '--enable-gpu-rasterization', '--use-angle=metal', `--window-size=${W},${H}`],
   defaultViewport: { width: W, height: H, deviceScaleFactor: 1 },
 });
