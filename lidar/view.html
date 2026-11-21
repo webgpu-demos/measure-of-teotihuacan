@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lidar Splat Viewer</title>
+<link rel="icon" href="data:,">
+<!--
+  Opens a Gaussian splat .ply (from lidar/splat.py, or any 3DGS PLY) and shows it in 3D.
+  Run `python lidar/view.py out/site.ply`: it serves this page on this computer only and opens the browser.
+  Works with no internet connection: the libraries are in vendor/ (see vendor/README.md), and the file is read
+  inside the browser and never uploaded. Browsers won't run this page from a double-click (file://), because
+  they block JavaScript modules there; view.py is the way to open it.
+-->
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three/three.module.min.js",
+  "three/addons/controls/OrbitControls.js": "./vendor/three/OrbitControls.js",
+  "@sparkjsdev/spark": "./vendor/spark/spark.module.min.js"
+} }
+</script>
+<style>
+  :root {
+    --bg: #e8e5de; --ink: #24211c; --muted: #6a6459; --panel: rgba(250, 248, 243, .9);
+    --line: rgba(36, 33, 28, .14); --accent: #9a5b2e; --accent-ink: #fff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16171a; --ink: #ece8df; --muted: #a39e93; --panel: rgba(30, 31, 35, .88);
+      --line: rgba(236, 232, 223, .14); --accent: #d39a6a; --accent-ink: #1b1209;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16171a; --ink: #ece8df; --muted: #a39e93; --panel: rgba(30, 31, 35, .88);
+    --line: rgba(236, 232, 223, .14); --accent: #d39a6a; --accent-ink: #1b1209;
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  .panel { position: fixed; left: 16px; top: 16px; width: min(340px, calc(100vw - 32px)); box-sizing: border-box;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  h1 { font-size: 15px; margin: 0 0 2px; letter-spacing: .01em; }
+  #name { color: var(--muted); overflow-wrap: anywhere; }
+  #stats { margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+  #status { margin: 6px 0 0; color: var(--muted); min-height: 1.45em; }
+  #status.error { color: #c0392b; }
+  .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  button, label.button { font: inherit; border: 1px solid var(--line); background: transparent; color: var(--ink);
+    border-radius: 7px; padding: 5px 11px; cursor: pointer; }
+  label.button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  button:hover, label.button:hover { filter: brightness(1.08); }
+  button:focus-visible, label.button:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .help { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+  #drop { position: fixed; inset: 0; display: none; place-items: center; font-size: 18px; pointer-events: none;
+    background: color-mix(in srgb, var(--accent) 16%, transparent); border: 3px dashed var(--accent); }
+  body.dragging #drop { display: grid; }
+</style>
+</head>
+<body>
+<div class="panel">
+  <h1>Lidar splat</h1>
+  <div id="name">No file open</div>
+  <div id="stats"></div>
+  <div id="status">Open a splat .ply, or drop one on the page.</div>
+  <div class="row">
+    <label class="button primary">Open .ply…<input id="pick" type="file" accept=".ply"></label>
+    <button id="reset" type="button">Reset view</button>
+  </div>
+  <p class="help">Drag to orbit · right-drag to pan · scroll to zoom.<br>The file is read in this browser and never uploaded.</p>
+</div>
+<div id="drop">Drop a splat .ply</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { SplatMesh } from '@sparkjsdev/spark';
+
+// Spark packs splat centres as 16-bit floats, which step by 0.5 m once a centre is 512 m from its mesh's
+// origin. Cutting the scene into tiles, each with its own origin, keeps every centre within ~0.06 m.
+const TILE = 200;
+const SH_C0 = 0.28209479177387814;
+const $ = (id) => document.getElementById(id);
+
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setSize(innerWidth, innerHeight);
+document.body.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight || 1, 0.1, 50000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.screenSpacePanning = false;
+controls.maxPolarAngle = Math.PI * 0.495;
+
+function paintBackground() {
+  scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim());
+}
+paintBackground();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintBackground);
+addEventListener('resize', () => {
+  if (!innerWidth || !innerHeight) return;               // a hidden tab can report zero size
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+window.viewer = { THREE, scene, camera, controls, renderer };       // for the console
+
+const status = (msg, error = false) => { $('status').textContent = msg; $('status').classList.toggle('error', error); };
+// Let the status line paint; the timeout keeps loading going in a background tab, where frames stop.
+const nextFrame = () => new Promise((r) => { requestAnimationFrame(r); setTimeout(r, 50); });
+
+const PLY_SIZES = { char: 1, uchar: 1, int8: 1, uint8: 1, short: 2, ushort: 2, int16: 2, uint16: 2,
+  int: 4, uint: 4, int32: 4, uint32: 4, float: 4, float32: 4, double: 8, float64: 8 };
+const NEEDED = ['x', 'y', 'z', 'f_dc_0', 'f_dc_1', 'f_dc_2', 'opacity', 'scale_0', 'scale_1', 'scale_2',
+  'rot_0', 'rot_1', 'rot_2', 'rot_3'];
+
+function parsePly(buf) {
+  const head = new TextDecoder('latin1').decode(new Uint8Array(buf, 0, Math.min(buf.byteLength, 65536)));
+  const end = head.indexOf('end_header\n');
+  if (!head.startsWith('ply') || end < 0) throw new Error('This is not a PLY file.');
+  if (!/format binary_little_endian/.test(head.slice(0, end))) throw new Error('Only binary little-endian PLY files are supported.');
+  let count = 0, inVertex = false, stride = 0;
+  const at = {};
+  for (const line of head.slice(0, end).split('\n')) {
+    const t = line.trim().split(/\s+/);
+    if (t[0] === 'element') {
+      if (inVertex && t[1] !== 'vertex') break;            // only the first element's properties matter
+      inVertex = t[1] === 'vertex';
+      if (inVertex) count = Number(t[2]);
+    } else if (t[0] === 'property' && inVertex) {
+      if (t[1] === 'list') throw new Error('Vertex lists are not supported.');
+      at[t[2]] = { off: stride, type: t[1] };
+      stride += PLY_SIZES[t[1]];
+    }
+  }
+  for (const n of NEEDED) {
+    if (!at[n] || PLY_SIZES[at[n].type] !== 4 || !/^float/.test(at[n].type)) {
+      throw new Error(`No float “${n}” in this PLY: is it a Gaussian splat file?`);
+    }
+  }
+  const view = new DataView(buf, end + 'end_header\n'.length);
+  if (view.byteLength < count * stride) throw new Error('The file is shorter than its header says.');
+  const cols = {};
+  for (const n of NEEDED) {
+    const a = new Float32Array(count), o = at[n].off;
+    for (let i = 0; i < count; i++) a[i] = view.getFloat32(i * stride + o, true);
+    cols[n] = a;
+  }
+  return { count, cols };
+}
+
+let meshes = [], bounds = null;
+
+// From the south, looking north and down; farther back on a portrait screen so the whole width fits.
+function resetView() {
+  if (!bounds) return;
+  const c = bounds.getCenter(new THREE.Vector3()), s = bounds.getSize(new THREE.Vector3());
+  const aspect = camera.aspect > 0 && Number.isFinite(camera.aspect) ? camera.aspect : 1;
+  const span = Math.max(s.x, s.z, s.y * 3, 1) * Math.max(1, 0.9 / aspect);
+  camera.near = span / 5000; camera.far = span * 20; camera.updateProjectionMatrix();
+  controls.target.copy(c);
+  camera.position.copy(c).add(new THREE.Vector3(0, span * 0.42, span * 0.72));
+  controls.update();
+}
+
+async function show(buf, name, meta) {
+  status('Reading…'); await nextFrame();
+  const { count, cols } = parsePly(buf);
+  for (const m of meshes) { scene.remove(m); m.dispose?.(); }
+  meshes = [];
+
+  const { x: X, y: Y, z: Z } = cols;
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < count; i++) {
+    lo[0] = Math.min(lo[0], X[i]); lo[1] = Math.min(lo[1], Y[i]); lo[2] = Math.min(lo[2], Z[i]);
+    hi[0] = Math.max(hi[0], X[i]); hi[1] = Math.max(hi[1], Y[i]); hi[2] = Math.max(hi[2], Z[i]);
+  }
+  const box = new THREE.Box3(new THREE.Vector3(...lo), new THREE.Vector3(...hi));
+  const t0 = lo.map((v) => Math.floor(v / TILE));
+  const [nx, ny, nz] = hi.map((v, a) => Math.floor(v / TILE) - t0[a] + 1);
+  const tileOf = new Int32Array(count), counts = new Int32Array(nx * ny * nz);
+  for (let i = 0; i < count; i++) {          // counting sort of the splats by tile
+    const t = ((Math.floor(X[i] / TILE) - t0[0]) * ny + Math.floor(Y[i] / TILE) - t0[1]) * nz
+      + Math.floor(Z[i] / TILE) - t0[2];
+    tileOf[i] = t; counts[t]++;
+  }
+  const starts = new Int32Array(counts.length + 1);
+  for (let t = 0; t < counts.length; t++) starts[t + 1] = starts[t] + counts[t];
+  const order = new Int32Array(count), fill = starts.slice(0, -1);
+  for (let i = 0; i < count; i++) order[fill[tileOf[i]]++] = i;
+  const tiles = [];
+  for (let t = 0; t < counts.length; t++) {
+    if (!counts[t]) continue;
+    const ix = Math.floor(t / (ny * nz)), iy = Math.floor(t / nz) % ny, iz = t % nz;
+    tiles.push({ origin: [(t0[0] + ix + 0.5) * TILE, (t0[1] + iy + 0.5) * TILE, (t0[2] + iz + 0.5) * TILE],
+                 idx: order.subarray(starts[t], starts[t + 1]) });
+  }
+  status(`Building ${tiles.length} tiles…`); await nextFrame();
+
+  const centre = new THREE.Vector3(), scales = new THREE.Vector3(), quat = new THREE.Quaternion(), colour = new THREE.Color();
+  const sig = (v) => 1 / (1 + Math.exp(-v));
+  const clamp = (v) => Math.min(1, Math.max(0, v));
+  const ready = [];
+  for (const { origin: [ox, oy, oz], idx } of tiles) {
+    const mesh = new SplatMesh({
+      maxSplats: idx.length,
+      constructSplats: (packed) => {
+        for (const i of idx) {
+          centre.set(cols.x[i] - ox, cols.y[i] - oy, cols.z[i] - oz);
+          scales.set(Math.exp(cols.scale_0[i]), Math.exp(cols.scale_1[i]), Math.exp(cols.scale_2[i]));
+          quat.set(cols.rot_1[i], cols.rot_2[i], cols.rot_3[i], cols.rot_0[i]).normalize();
+          colour.setRGB(clamp(0.5 + SH_C0 * cols.f_dc_0[i]), clamp(0.5 + SH_C0 * cols.f_dc_1[i]),
+                        clamp(0.5 + SH_C0 * cols.f_dc_2[i]));
+          packed.pushSplat(centre, scales, quat, sig(cols.opacity[i]), colour);
+        }
+      },
+    });
+    mesh.position.set(ox, oy, oz);
+    scene.add(mesh);
+    meshes.push(mesh);
+    ready.push(mesh.initialized);
+  }
+  await Promise.all(ready);
+  bounds = box;
+  resetView();
+
+  $('name').textContent = name;
+  const parts = [`${count.toLocaleString()} splats`];
+  if (meta?.median_spacing_m) parts.push(`${meta.median_spacing_m} m spacing`);
+  if (meta?.color) parts.push(`${meta.color} colour`);
+  $('stats').textContent = parts.join(' · ');
+  const s = box.getSize(new THREE.Vector3());
+  status(`${Math.round(s.x).toLocaleString()} × ${Math.round(s.z).toLocaleString()} m, ${Math.round(s.y)} m relief`);
+}
+
+async function openUrl(url) {
+  try {
+    status('Loading…');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Could not load ${url} (${res.status}).`);
+    const buf = await res.arrayBuffer();
+    const meta = await fetch(url.replace(/\.ply$/i, '.json')).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    await show(buf, url.split('/').pop(), meta);
+  } catch (e) { status(e.message, true); }
+}
+async function openFile(file) {
+  try { await show(await file.arrayBuffer(), file.name, null); } catch (e) { status(e.message, true); }
+}
+
+$('pick').addEventListener('change', (e) => e.target.files[0] && openFile(e.target.files[0]));
+$('reset').addEventListener('click', resetView);
+addEventListener('dragover', (e) => { e.preventDefault(); document.body.classList.add('dragging'); });
+addEventListener('dragleave', (e) => { if (!e.relatedTarget) document.body.classList.remove('dragging'); });
+addEventListener('drop', (e) => {
+  e.preventDefault(); document.body.classList.remove('dragging');
+  const f = e.dataTransfer.files[0];
+  if (f) openFile(f);
+});
+
+const param = new URLSearchParams(location.search).get('file');
+if (param) openUrl(param);
+</script>
+</body>
+</html>
