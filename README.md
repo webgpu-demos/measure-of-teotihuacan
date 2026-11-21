@@ -63,6 +63,12 @@ node recon/shot.mjs avenue:today:then sun:then:then:ev:one
 
 Data notes: heights are INEGI's (terms of free use, with attribution); `docs/reconstruction/data/sites.json` is derived from OpenStreetMap and is available under the ODbL. The private version of this pipeline would swap in the team's own lidar and mapped features, run on their machines.
 
+## Excavation CAD reader (Step 1)
+
+`cad/cadmeasure.py` runs on the excavation team's own machine. It reads their AutoCAD drawings (DXF, or DWG with the free ODA File Converter) and writes a table of wall thicknesses, room widths, stair widths, heights and element sizes on the city's grid. Each length is tagged with its drawing, layer and AutoCAD handle, and no coordinate is ever written. Each layer's meaning is suggested from its name in Spanish or English, the archaeologist confirms it, and `freeze` hashes the table for the pre-registration.
+
+`cad/cadmeasure.py selftest` proves it on made-up drawings with a known unit: 83 cm and 80.5 cm are each recovered and told apart. Its statistics note matters for the study design: on lengths read off drawings, the standard quantogram noise bar is too lenient. So for a confirmation to stand up to review, the test has to respect how the drawings are built. See [cad/README.md](cad/README.md).
+
 ## Honesty notes
 
 - The 3D scenes are illustrations, not survey data. The real lidar and CAD stay with the excavation team under INAH rules.
