@@ -2,7 +2,7 @@
 
 Inputs (downloaded into recon-data/ on first run; not committed):
   * INEGI 1.5 m LiDAR terrain (MDT) and surface (MDS) models, sheets E14B21B1-B4
-  * OpenStreetMap features from the Overpass query in recon-data/osm/query.overpassql
+  * OpenStreetMap features from the Overpass query in recon/osm_query.overpassql (saved as recon-data/osm/site.json)
   * AWS open terrain tiles (terrarium) for the distant horizon
 
 Outputs (docs/reconstruction/data/):
@@ -80,6 +80,14 @@ def encode(a, path):
 def extent(box):
     return {'x0': box['xmin'] - ORIGIN[0], 'x1': box['xmax'] - ORIGIN[0], 'y0': box['ymin'] - ORIGIN[1], 'y1': box['ymax'] - ORIGIN[1],
             'res': box['res'], 'w': round((box['xmax'] - box['xmin']) / box['res']), 'h': round((box['ymax'] - box['ymin']) / box['res'])}
+
+
+def core_mask(poly):
+    """Polygon in local metres -> boolean mask on the 3 m core grid."""
+    e, res = extent(CORE), CORE['res']
+    img = Image.new('L', (e['w'], e['h']), 0)
+    ImageDraw.Draw(img).polygon([((x - e['x0']) / res, (e['y1'] - y) / res) for x, y in poly], fill=1)
+    return np.asarray(img, bool)
 
 
 # ------------------------------------------------------------------ horizon tiles
@@ -187,13 +195,10 @@ def detect_mounds(dtm, zone_poly):
     e = extent(CORE)
     res = CORE['res']
     lrm = dtm - ndimage.gaussian_filter(dtm, sigma=15)
-    mask_img = Image.new('L', (e['w'], e['h']), 0)
-    to_px = lambda x, y: ((x - e['x0']) / res, (e['y1'] - y) / res)
-    ImageDraw.Draw(mask_img).polygon([to_px(x, y) for x, y in zone_poly], fill=1)
-    zone = np.asarray(mask_img, bool)
+    zone = core_mask(zone_poly)
     cand = (lrm > 0.5) & zone
     cand = ndimage.binary_opening(cand, iterations=2)
-    lab, n = ndimage.label(cand)
+    lab, _ = ndimage.label(cand)
     out = []
     for i, sl in enumerate(ndimage.find_objects(lab), start=1):
         if sl is None:
@@ -230,12 +235,7 @@ def from_grid(u, v):
 
 def measure(poly, dtm):
     """Grid-aligned footprint, base and top elevation of a site, measured on the 3 m DTM."""
-    e = extent(CORE)
-    res = CORE['res']
-    to_px = lambda x, y: ((x - e['x0']) / res, (e['y1'] - y) / res)
-    img = Image.new('L', (e['w'], e['h']), 0)
-    ImageDraw.Draw(img).polygon([to_px(x, y) for x, y in poly], fill=1)
-    m = np.asarray(img, bool)
+    m = core_mask(poly)
     if m.sum() < 4:
         return None
     ring = ndimage.binary_dilation(m, iterations=4) & ~ndimage.binary_dilation(m, iterations=1)

@@ -9,11 +9,10 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
+import { docsHandler, CHROME } from './serve.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const WEB = path.join(ROOT, 'docs');
 const OUT = path.join(ROOT, 'render', 'out');
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const FPS = 30;
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) => {
@@ -21,13 +20,7 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) =>
   return acc;
 }, []));
 
-const TYPES = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.m4a': 'audio/mp4', '.mp4': 'video/mp4', '.png': 'image/png', '.jpg': 'image/jpeg' };
-const server = http.createServer((req, res) => {
-  const p = path.join(WEB, decodeURIComponent(new URL(req.url, 'http://x').pathname));
-  if (!p.startsWith(WEB) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); res.end(); return; }
-  res.writeHead(200, { 'content-type': TYPES[path.extname(p)] || 'application/octet-stream' });
-  fs.createReadStream(p).pipe(res);
-});
+const server = http.createServer(docsHandler);
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const port = server.address().port;
 

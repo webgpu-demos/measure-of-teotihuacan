@@ -3,7 +3,7 @@
 For each chapter clip in render/audio/<id>.mp3:
   * trim leading and trailing silence,
   * shorten long pauses (internal pauses and line breaks separately),
-  * apply a slight tempo lift,
+  * apply TEMPO (1.0 = unchanged),
   * find where each caption line starts and ends in the processed audio.
 
 Writes render/audio/proc/<id>.wav and docs/timing.js, which story.js reads so
@@ -13,7 +13,6 @@ Usage: python3 -I render/narration.py
 """
 import json
 import os
-import re
 import subprocess
 import sys
 

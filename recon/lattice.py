@@ -12,13 +12,15 @@ Both curves are measured against their own running median (+-10% in q), the loca
 running spread, so broad bumps from common building sizes or uneven edge density do not count; a shared
 spacing gives sharp peaks.
 
-The chance bar comes from fake versions of the same edges: cut into 300 m tiles, each tile stretched by up to
-+-15% and shifted at random. Each tile keeps its own shapes, but any spacing shared between tiles is broken.
+The chance bar comes from fake versions of the same edges, cut into 300 m tiles: for the local test each tile is
+stretched by up to +-15% and shifted by up to +-50 m, for the global test each tile is shifted by up to +-1 km.
+Each tile keeps its own shapes, but any spacing shared between tiles is broken.
 The tallest peak anywhere in each fake scan sets the 95% and 99% bars, which pays for scanning many spacings.
 The spacings in TARGETS were written down before the real data was scanned; for those, the pointwise p-value
 is reported as well. Decision rule, also fixed in advance: a spacing counts as found only if it clears the 99%
 bar for the whole box and also reaches p < 0.05 at the same spacing in the west and east halves, scanned
-separately. On 20 synthetic cities with no unit, the 95% and 99% bars were crossed at about their nominal rates.
+separately. The false-alarm check on 20 synthetic cities with no unit was run outside this file, with the run-1
+edge settings; see recon/pilot/README.md.
 
 Before the real data, the same code runs on synthetic cities with a known answer (SYNTH).
 
@@ -66,7 +68,6 @@ TARGETS = [
     (8.30, '10 TMU'), (10.79, '13 TMU'), (16.60, '20 TMU'), (43.16, '52 TMU'), (215.8, '260 TMU'),
     (16.10, '20 x 80.5 cm'), (8.38, '10 varas'), (16.76, '20 varas'), (10.0, '10 m'), (20.0, '20 m'),
 ]
-BASE20 = [(16.10, '20 x 80.5 cm'), (16.60, '20 TMU'), (16.76, '20 varas'), (20.0, '20 m')]
 
 SYNTH = {   # planted spacing (m); 'local' shares 16.6 m inside 600 m neighbourhoods but not between them
     'tmu20': 16.60, 'alt805': 16.10, 'vara20': 16.76, 'metre20': 20.0, 'local': 16.60, 'none': None,
@@ -81,7 +82,17 @@ def log(*a):
     print(time.strftime('%H:%M:%S'), *a, flush=True)
 
 
+def read_sites():
+    with open(SITES) as f:
+        return json.load(f)
+
+
 # ------------------------------------------------------------------ rasters in the grid frame
+def to_grid(pts):
+    """Local metres (x east, y north) -> grid axes (u, v)."""
+    return np.array([(x * CA - y * SA, x * SA + y * CA) for x, y in pts])
+
+
 def frame(cu, cv, half):
     n = int(round(2 * half / STEP))
     return {'n': n, 'cu': cu, 'cv': cv, 'u_left': cu - half, 'v_top': cv + half,
@@ -128,7 +139,7 @@ def rotate(a, box, fr):
 
 
 # ------------------------------------------------------------------ edges
-def lines_down_rows(across, along, ok, min_len=15.0, gmin=0.10, tilt_deg=3.0, max_rms=0.6):
+def lines_down_rows(across, along, ok, *, min_len, gmin, max_rms, tilt_deg=3.0):
     """Straight edges that run down the rows (near-constant column). Returns sub-pixel column, row span, strength."""
     m = np.abs(across)
     left, right = np.roll(m, 1, axis=1), np.roll(m, -1, axis=1)
@@ -268,7 +279,7 @@ def zscore(y):
     return d / np.maximum(s, 0.5 * np.median(s) + 1e-9)            # floor: a nearly flat stretch is not zero noise
 
 
-def comb(h, q, kmax=None):
+def comb(h, q):
     """Mean cosine of separations near each multiple k*q: a shared unit lifts many k, a common size only one."""
     out = []
     for k in range(1, int(600 / q) + 1):
@@ -306,11 +317,11 @@ def global_test(segs, centre, reps=300, seed=2):
     rel = [s['pos'] - centre[0 if s['axis'] == 'u' else 1] for s in segs]
     tids = [tiles(s)[0] for s in segs]
     flat = lambda y: y / ndimage.median_filter(y, size=MED, mode='reflect')
-    S = spectrum(rel)
+    real = flat(pool(spectrum(rel)))
     null = np.empty((reps, len(QS_GLOBAL)), np.float32)
     for r in range(reps):
         null[r] = flat(pool(spectrum([p + rng.uniform(-1000, 1000, t.max() + 1 if len(t) else 1)[t] for p, t in zip(rel, tids)])))
-    return {'q': QS_GLOBAL, 'raw': pool(S), 'real': flat(pool(S)), 'null': null, 'S': S, 'rel': rel, 'tids': tids}
+    return {'q': QS_GLOBAL, 'real': real, 'null': null, 'rel': rel, 'tids': tids}
 
 
 def locate(rel, tids, q_lo, q_hi, boots=200, seed=3):
@@ -376,14 +387,13 @@ def p_at(t, qt):
     return round(v, 3), round(float(np.mean(t['null'][:, w].max(axis=1) >= v)), 4)
 
 
-def analyse(segs, centre, reps_local=200, reps_global=300, locate_unit=True):
+def analyse(segs, centre, reps_local=200, reps_global=300):
     t0 = time.time()
     res = {'segments': [int(len(s['pos'])) for s in segs]}
     lt = local_test(segs, reps_local)
     gt = global_test(segs, centre, reps_global)
     res['local'], res['global'] = summarise(lt, 'local'), summarise(gt, 'global')
-    if locate_unit:
-        res['global']['base20_peak'] = locate(gt['rel'], gt['tids'], 15.6, 20.6)
+    res['global']['base20_peak'] = locate(gt['rel'], gt['tids'], 15.6, 20.6)
     res['seconds'] = round(time.time() - t0, 1)
     curves = {'lq': lt['q'], 'lreal': lt['real'], 'lraw': lt['raw'], 'lnull95': np.percentile(lt['null'].max(axis=1), 95),
               'lnull99': np.percentile(lt['null'].max(axis=1), 99), 'gq': gt['q'], 'greal': gt['real'],
@@ -479,9 +489,8 @@ def cmd_synth():
 
 
 def zone_mask():
-    s = json.load(open(SITES))
+    s = read_sites()
     from matplotlib.path import Path
-    to_grid = lambda pts: np.array([(x * CA - y * SA, x * SA + y * CA) for x, y in pts])
     zone = Path(to_grid(s['sites']['zone']['poly']))
     mon = [Path(to_grid(s['sites'][k]['poly'])) for k in ('sun', 'moon', 'fsp', 'fsp-adosada', 'ciudadela-wall', 'ciudadela-platform')
            if k in s['sites']]
@@ -586,9 +595,10 @@ def cmd_power():
                 s['mu' if s['axis'] == 'u' else 'mv'] = p
                 segs.append(s)
             lt, gt = local_test(segs, 200, seed), global_test(segs, CENTRE, 200, seed)
-            row = {'share': share, 'seed': seed, 'local': p_at(lt, 16.6), 'global': p_at(gt, 16.6),
-                   'local_over_bar99': bool(p_at(lt, 16.6)[0] > np.percentile(lt['null'].max(axis=1), 99)),
-                   'global_over_bar99': bool(p_at(gt, 16.6)[0] > np.percentile(gt['null'].max(axis=1), 99))}
+            pl, pg = p_at(lt, 16.6), p_at(gt, 16.6)
+            row = {'share': share, 'seed': seed, 'local': pl, 'global': pg,
+                   'local_over_bar99': bool(pl[0] > np.percentile(lt['null'].max(axis=1), 99)),
+                   'global_over_bar99': bool(pg[0] > np.percentile(gt['null'].max(axis=1), 99))}
             out.append(row)
             log(row)
     json.dump(out, open(os.path.join(OUT, 'power.json'), 'w'), indent=1)
@@ -646,8 +656,7 @@ def cmd_figures():
     ew = [((a0, p), (a1, p)) for p, a0, a1 in zip(sg['v_pos'], sg['v_a0'], sg['v_a1'])]
     ax.add_collection(LineCollection(ns, colors=SERIES[0], linewidths=1.2, label=f'running with the grid N-S ({len(ns)})'))
     ax.add_collection(LineCollection(ew, colors=SERIES[1], linewidths=1.2, label=f'running with the grid E-W ({len(ew)})'))
-    s = json.load(open(SITES))
-    to_grid = lambda pts: np.array([(x * CA - y * SA, x * SA + y * CA) for x, y in pts])
+    s = read_sites()
     zg = to_grid(s['sites']['zone']['poly'])
     ax.plot(np.r_[zg[:, 0], zg[:1, 0]], np.r_[zg[:, 1], zg[:1, 1]], color=INK, lw=1, ls=(0, (3, 2)), label='protected archaeological zone')
     ax.set_xlim(ext[0], ext[1]); ax.set_ylim(ext[2], ext[3])
