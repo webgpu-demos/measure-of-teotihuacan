@@ -5,8 +5,8 @@ import * as THREE from 'three';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
-import { CHAPTERS, TIMELINE, TITLE, chapterAt, STATS, HYPOTHESES, EXAMPLE_RECORDS, SKEPTICS, ROLES, OUTCOMES, WEEKS } from './story.js';
-import { synth, grid, scan, threshold, peak, valueAt } from './quanto.js';
+import { CHAPTERS, TIMELINE, TITLE, chapterAt, STATS, HYPOTHESES, UNIT_MARKS, EXAMPLE_RECORDS, SKEPTICS, ROLES, JOBS, OUTCOMES, WEEKS } from './story.js';
+import { rng, synth, grid, scan, threshold, peak, valueAt } from './quanto.js';
 
 const W = 1920, H = 1080;
 const DEG = Math.PI / 180;
@@ -60,17 +60,6 @@ function heightAt(wx, wz) {
   const rz = 860 + 110 * Math.sin(lx / 420);                // San Juan river channel
   h -= 3.4 * Math.exp(-((lz - rz) ** 2) / (2 * 24 * 24));
   return h;
-}
-
-function rng(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 // ---------------------------------------------------------------- geometry
@@ -199,6 +188,9 @@ function edgesOf(mesh, threshold = 25) {
 }
 
 // ---------------------------------------------------------------- the film
+
+// Faces the overlays use. Pages load these before createFilm, so no frame is set in a fallback font.
+export const FILM_FONTS = ['800 40px Syne', '700 40px Syne', '500 40px "Hanken Grotesk"', '600 40px "Hanken Grotesk"', '500 20px "JetBrains Mono"', '700 20px "JetBrains Mono"'];
 
 export async function createFilm(stage, opts = {}) {
   const glCanvas = document.createElement('canvas');
@@ -549,8 +541,7 @@ export async function createFilm(stage, opts = {}) {
   for (let z = 1250; z <= 2150; z += 180) ribbon([[-1600, z], [-420, z]], 7);
 
   // 15.5° overlay at the Moon plaza
-  const P = new THREE.Vector3(...[MOON[0], 0, MOON[1] + 260]);
-  const pw = toWorld(P.x, P.z);
+  const pw = toWorld(MOON[0], MOON[1] + 260);
   const py = heightAt(pw[0], pw[1]) + 3;
   const north = fatLines([pw[0], py, pw[1], pw[0], py, pw[1] - 1500], '#ece6d6', 2.2, { dashed: true, dashSize: 14, gapSize: 10, depthTest: false });
   const ax = [Math.sin(15.5 * DEG), -Math.cos(15.5 * DEG)];
@@ -564,7 +555,7 @@ export async function createFilm(stage, opts = {}) {
   scene.add(north, axis, arcLine);
   const arcLabelPos = new THREE.Vector3(pw[0] + Math.sin(7.7 * DEG) * 1000, py, pw[1] - Math.cos(7.7 * DEG) * 1000);
 
-  // City-scale transect for Step 7
+  // City-scale transect for Step 9
   const tz = -300;
   const crossings = [];
   for (const c of compounds) {
@@ -751,11 +742,7 @@ export async function createFilm(stage, opts = {}) {
   const lineLegend = el('<span><i style="background:var(--jade)"></i>ancient</span><span><i style="background:#c29a6b"></i>modern</span><span style="color:var(--mute)">trained on the 2021 mapped features · tested on ground-verified areas</span>', 'o legend', ui);
   Object.assign(lineLegend.style, { left: '96px', top: '290px', padding: '12px 16px', background: 'rgba(8,10,11,0.72)', borderRadius: '6px' });
   const jobs = el('', 'cards', ui); jobs.style.gridTemplateColumns = 'repeat(4, 1fr)'; jobs.style.top = '300px';
-  const JOB = [['Builds', 'Pipeline and tests', 'CAD reader, lidar pipeline, classifier and statistics, each tested on data with a known answer.'],
-    ['Reads', 'Messy to tidy', 'Spanish layer names, field notes and old reports become structured, citable rows.'],
-    ['Remembers', 'A second dataset', 'Every published dimension of the city, with its source, for an independent check.'],
-    ['Doubts', 'Skeptic agents', 'Attack each result and turn every objection into a check that runs.']]
-    .map(([e, b, p]) => el(`<em>${e}</em><b>${b}</b><p>${p}</p>`, 'card', jobs));
+  const JOB = JOBS.map(([e, b, p]) => el(`<em>${e}</em><b>${b}</b><p>${p}</p>`, 'card', jobs));
   const guardBox = el(`<div class="gflow"><div class="gnode">Claude<br><small>proposes</small></div><i>→</i><div class="gnode accent">Archaeologist<br><small>confirms or rejects</small></div><i>→</i><div class="gnode">Frozen dataset<br><small>hashed, pre-registered</small></div></div>`, 'o', ui);
   guardBox.id = 'guard';
   const never = el('<b>Never sent to the AI</b><span>coordinates</span><span>point clouds</span><span>imagery</span><span>final verdicts</span>', 'o never', ui);
@@ -923,7 +910,7 @@ export async function createFilm(stage, opts = {}) {
       const n = dimObjs.length;
       dimObjs.forEach((d, i) => {
         const at = e ? cueAt(tc, 0) + 0.3 + i * ((cueAt(tc, 2) - cueAt(tc, 0) + 0.6) / n) : -1;
-        const o = e ? ramp(tau, at, 0.35) : 1 - ramp(tau, tc.dur - 0.8, 0.6) * 0;
+        const o = e ? ramp(tau, at, 0.35) : 1;
         d.line.visible = o > 0.01;
         d.line.material.opacity = o;
         const wp = d.mid.clone(); hero.group.localToWorld(wp);
@@ -1128,7 +1115,7 @@ export async function createFilm(stage, opts = {}) {
     else if (tau < sweepEnd) q = lerp(0.3, 2.0, clamp01((tau - sweepStart) / (sweepEnd - sweepStart)));
     else if (tau < c3) q = lerp(2.0, 0.83, easeIO((tau - sweepEnd) / 0.9));
     else q = lerp(0.83, 0.415, easeIO((tau - c3 - 0.8) / 1.2));
-    const swept = tau < sweepStart ? (tau < c2 ? 0 : 0) : clamp01((tau - sweepStart) / (sweepEnd - sweepStart));
+    const swept = tau < sweepStart ? 0 : clamp01((tau - sweepStart) / (sweepEnd - sweepStart));
     const curveO = tau < c2 ? 0 : 1;
     const o = win(tau, 0.3, tc.dur - 0.15, 0.6, 0.4);
     ctx.save();
@@ -1182,7 +1169,7 @@ export async function createFilm(stage, opts = {}) {
     for (const cm of [30, 50, 80, 100, 150, 200]) ctx.fillText(`${cm}`, px(cm / 100), Y0 + 32);
     ctx.fillText('candidate unit q (cm)', (X0 + X1) / 2, Y0 + 62);
     // hypothesis markers
-    for (const [qq, lab] of [[0.58, '58'], [0.805, '80.5'], [0.83, '83']]) {
+    for (const [qq, lab] of UNIT_MARKS) {
       ctx.strokeStyle = 'rgba(134,169,200,0.5)'; ctx.setLineDash([4, 6]); ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(px(qq), Y1 - 6); ctx.lineTo(px(qq), Y0); ctx.stroke(); ctx.setLineDash([]);
       ctx.fillStyle = 'rgba(134,169,200,0.85)'; ctx.font = '500 15px "JetBrains Mono"';

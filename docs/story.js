@@ -387,7 +387,7 @@ const SPOKEN = [
 ];
 export const spoken = (text) => SPOKEN.reduce((s, [re, to]) => s.replace(re, to), text);
 
-// Measured narration timings (written by render/narration.mjs from the real
+// Measured narration timings (written by render/narration.py from the real
 // audio). Without them, captions fall back to a reading pace.
 import { TIMING } from './timing.js';
 
@@ -440,13 +440,17 @@ export const GROUND = [
   { label: 'Natural', pct: 15 },
 ];
 
+// `q` is the candidate unit in metres, for the hypotheses that name one.
 export const HYPOTHESES = [
-  { label: '83 cm', note: 'proposed 1993', detail: 'Read from balustrade widths, stair widths and sculpture spacing at the Feathered Serpent Pyramid, then applied to city-scale distances.' },
-  { label: '≈80.5 cm', note: 'earlier estimate', detail: 'An earlier figure from work on measurement units and building axes. Only 3% shorter than 83 cm.' },
-  { label: '≈58 cm', note: 'later proposal', detail: 'A smaller unit proposed in later comparative metrology.' },
+  { label: '83 cm', q: 0.83, note: 'proposed 1993', detail: 'Read from balustrade widths, stair widths and sculpture spacing at the Feathered Serpent Pyramid, then applied to city-scale distances.' },
+  { label: '≈80.5 cm', q: 0.805, note: 'earlier estimate', detail: 'An earlier figure from work on measurement units and building axes. Only 3% shorter than 83 cm.' },
+  { label: '≈58 cm', q: 0.58, note: 'later proposal', detail: 'A smaller unit proposed in later comparative metrology.' },
   { label: 'Drifting', note: 'changed over time', detail: 'A unit that shifts between construction phases, which only phase-tagged data can detect.' },
   { label: 'None', note: 'no shared unit', detail: 'Dimensions set by materials, bodies and local practice rather than a common unit.' },
 ];
+
+// Markers for the named units on both quantograms: [metres, centimetre label], shortest first.
+export const UNIT_MARKS = HYPOTHESES.filter((x) => x.q).map((x) => [x.q, String(Math.round(x.q * 1000) / 10)]).sort((a, b) => a[0] - b[0]);
 
 export const EXAMPLE_RECORDS = [
   ['stair width', 5.81, 'ESCALERA', 'original', 2],
@@ -488,6 +492,14 @@ export const ROLES = [
   ['Archaeologist', 'Ground truth', 'Original vs restored, construction phases, permits, and what the answer means.'],
   ['Lidar & 3D engineer', 'The vault and pipeline', 'Lidar custody, processing and classification; the CAD reader and 3D viewer.'],
   ['Claude', 'Speed and scrutiny', 'Builds, reads, remembers and doubts, always proposing and never deciding.'],
+];
+
+// The four jobs in "What the AI brings": name, title, and the film's one-line card.
+export const JOBS = [
+  ['Builds', 'Pipeline and tests', 'CAD reader, lidar pipeline, classifier and statistics, each tested on data with a known answer.'],
+  ['Reads', 'Messy to tidy', 'Spanish layer names, field notes and old reports become structured, citable rows.'],
+  ['Remembers', 'A second dataset', 'Every published dimension of the city, with its source, for an independent check.'],
+  ['Doubts', 'Skeptic agents', 'Attack each result and turn every objection into a check that runs.'],
 ];
 
 export const OUTCOMES = [

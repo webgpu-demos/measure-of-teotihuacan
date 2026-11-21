@@ -101,7 +101,7 @@
   .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 600 12.5px/1 var(--mono); letter-spacing: 0.02em; }
   .chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--jade); }
 
-  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; container-type: inline-size; }
   .panel > .ptitle { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 14px; }
   .panel > .ptitle b { font: 700 16px/1.2 var(--body); }
   .panel > .ptitle span { font: 500 11.5px/1.2 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
@@ -143,7 +143,6 @@
   .switch input { width: 18px; height: 18px; accent-color: var(--jade); }
   select { font: 600 12.5px/1 var(--mono); padding: 4px 6px; border-radius: 5px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
 
-  .panel { container-type: inline-size; }
   .qgrid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
   .qside { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); align-items: center; }
   @container (min-width: 520px) { .qside { grid-template-columns: 170px minmax(0, 1fr); } }
@@ -215,7 +214,7 @@
 <div class="wrap">
   <header class="top">
     <div class="eyebrow">A research plan · archaeology × lidar × AI</div>
-    <h1 id="h1">The Measure of Teotihuacan</h1>
+    <h1>The Measure of Teotihuacan</h1>
     <p id="sub"></p>
     <div class="meta"><span><b id="mins"></b> film</span><span><b id="nsteps"></b> chapters</span><span>Film, walkthrough and written plan share one storyboard</span><a href="reconstruction/">Prototype: the city rebuilt on public lidar →</a></div>
   </header>
@@ -273,14 +272,14 @@
 } }
 </script>
 <script type="module">
-import { CHAPTERS, TIMELINE, SUBTITLE, SOURCES, FIRST_CALL_QUESTIONS, STATS, GROUND, HYPOTHESES, EXAMPLE_RECORDS, LAYERS, SKEPTICS, ROLES, OUTCOMES, WEEKS } from './story.js';
+import { CHAPTERS, TIMELINE, SUBTITLE, SOURCES, FIRST_CALL_QUESTIONS, STATS, GROUND, HYPOTHESES, UNIT_MARKS, EXAMPLE_RECORDS, LAYERS, SKEPTICS, ROLES, JOBS, OUTCOMES, WEEKS } from './story.js';
 import { synth, grid, scan, threshold, peak, valueAt } from './quanto.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const h = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
-    if (k === 'class') e.className = v; else if (k === 'html') e.innerHTML = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+    if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
   }
   for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(k));
   return e;
@@ -306,7 +305,7 @@ const filmReady = new Promise((r) => (resolveReady = r));
 class FilmPlayer extends EventTarget {
   constructor(duration) {
     super();
-    this.duration = duration; this.paused = true; this.seeking = false; this.muted = false;
+    this.duration = duration; this.paused = true; this.muted = false;
     this._t = 0; this._t0 = 0; this.film = null; this.ctx = null; this.buf = null; this.src = null; this.gain = null; this.audioFailed = false;
     this.bytes = Promise.all(Array.from({ length: AUDIO_PARTS }, (_, i) => fetch(`audio-v4/sound-${String(i).padStart(2, '0')}.mp3`).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.arrayBuffer(); })))
       .then((parts) => {
@@ -400,8 +399,8 @@ async function startFilm() {
     const fit = () => { stage.style.transform = `scale(${host.clientWidth / 1920})`; };
     new ResizeObserver(fit).observe(host);
     fit();
-    await Promise.all(['800 40px Syne', '700 40px Syne', '500 40px "Hanken Grotesk"', '500 20px "JetBrains Mono"', '700 20px "JetBrains Mono"'].map((f) => document.fonts.load(f)));
-    const { createFilm } = await import('./engine.js');
+    const { createFilm, FILM_FONTS } = await import('./engine.js');
+    await Promise.all(FILM_FONTS.map((f) => document.fonts.load(f)));
     const pixelRatio = Math.min(1, Math.max(0.5, (host.clientWidth * (window.devicePixelRatio || 1)) / 1920));
     player.film = await createFilm(stage, { pixelRatio });
     player.draw();
@@ -497,6 +496,7 @@ addEventListener('keydown', (e) => {
   if (e.target.closest('input, select, textarea, button')) return;
   if (e.key === 'ArrowRight') go(current + 1, true);
   if (e.key === 'ArrowLeft') go(current - 1, true);
+  if (e.key === ' ' && !e.target.closest('summary')) { e.preventDefault(); player.paused ? player.play() : player.pause(); }
 });
 
 // ---------------------------------------------------------------- sync loop
@@ -504,7 +504,7 @@ function tick() {
   const t = player.currentTime || 0;
   let idx = 0;
   for (let j = TIMELINE.chapters.length - 1; j >= 0; j--) if (t >= TIMELINE.chapters[j].start) { idx = j; break; }
-  if (idx !== current && (!player.paused || player.seeking || t > 0)) render(idx);
+  if (idx !== current && (!player.paused || t > 0)) render(idx);
   TIMELINE.chapters.forEach((c, j) => { railBtns[j].querySelector('.fill').style.width = `${Math.max(0, Math.min(1, (t - c.start) / c.dur)) * 100}%`; });
   const tc = TIMELINE.chapters[current];
   tc.cues.forEach((c, k) => {
@@ -678,7 +678,7 @@ const WIDGETS = {
       }
       for (const cm of [30, 50, 80, 100, 150, 200]) { const t = s('text', { x: px(cm / 100), y: Y0 + 20, 'text-anchor': 'middle', fill: 'var(--muted)', 'font-size': 12.5 }); t.textContent = cm; svgEl.append(t); }
       const xl = s('text', { x: (X0 + X1) / 2, y: Y0 + 40, 'text-anchor': 'middle', fill: 'var(--muted)', 'font-size': 12.5 }); xl.textContent = 'candidate unit q (cm)'; svgEl.append(xl);
-      for (const [q, l] of [[0.58, '58'], [0.805, '80.5'], [0.83, '83']]) {
+      for (const [q, l] of UNIT_MARKS) {
         svgEl.append(s('line', { x1: px(q), x2: px(q), y1: Y1, y2: Y0, stroke: 'var(--steel)', 'stroke-dasharray': '3 4', opacity: 0.7 }));
         const t = s('text', { x: px(q) + (l === '80.5' ? -4 : 4), y: Y1 + 10, 'text-anchor': l === '80.5' ? 'end' : 'start', fill: 'var(--steel)', 'font-size': 12 }); t.textContent = l; svgEl.append(t);
       }
@@ -800,7 +800,7 @@ exports/   (the only folder that may leave)
     const card = h('div', { class: 'stagecard' });
     const draw = () => {
       bar.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-pressed', String(i === cur)));
-      const [n, out, inp, tool, why] = STAGES[cur];
+      const [, out, inp, tool, why] = STAGES[cur];
       card.replaceChildren(
         h('div', { class: 'io' }, h('span', {}, `in: ${inp}`), h('span', {}, `out: ${out}`)),
         h('p', {}, why),
@@ -833,14 +833,15 @@ exports/   (the only folder that may leave)
   },
 
   ai() {
-    const JOBS = [
-      ['Builds', 'Code with tests', ['DXF reader and measurement extractor', 'PDAL / GDAL lidar pipeline', 'Line classifier: training and evaluation', 'Quantogram, Monte Carlo, figures'], 'Check: every module passes on synthetic data with a planted answer first.'],
-      ['Reads', 'Messy to tidy', ['Spanish CAD layer names → element types', 'Field notes → phases and conditions', 'Legacy reports → structured rows', 'Draft methods and a Spanish summary'], 'Check: each proposal is confirmed or rejected by the archaeologist.'],
-      ['Remembers', 'A second dataset', ['Every published Teotihuacan dimension', 'With citation, page and figure', 'Units normalised to metres', 'Flagged where sources disagree'], 'Check: a random 10% of rows re-checked by hand.'],
-      ['Doubts', 'Skeptic agents', ['Argues against each result', 'Turns objections into runnable checks', 'Reports where the classifier is least sure', 'Never sees the hoped-for answer'], 'Check: the archaeologist decides which objections are plausible.'],
-    ];
+    // Names and titles come from JOBS, shared with the film; the lists and checks are the app's own.
+    const DETAIL = {
+      Builds: [['DXF reader and measurement extractor', 'PDAL / GDAL lidar pipeline', 'Line classifier: training and evaluation', 'Quantogram, Monte Carlo, figures'], 'Check: every module passes on synthetic data with a planted answer first.'],
+      Reads: [['Spanish CAD layer names → element types', 'Field notes → phases and conditions', 'Legacy reports → structured rows', 'Draft methods and a Spanish summary'], 'Check: each proposal is confirmed or rejected by the archaeologist.'],
+      Remembers: [['Every published Teotihuacan dimension', 'With citation, page and figure', 'Units normalised to metres', 'Flagged where sources disagree'], 'Check: a random 10% of rows re-checked by hand.'],
+      Doubts: [['Argues against each result', 'Turns objections into runnable checks', 'Reports where the classifier is least sure', 'Never sees the hoped-for answer'], 'Check: the archaeologist decides which objections are plausible.'],
+    };
     return h('div', { class: 'col' },
-      h('div', { class: 'jobs' }, ...JOBS.map(([e, b, items, chk]) => h('div', { class: 'job' }, h('em', {}, e), h('b', {}, b), h('ul', {}, ...items.map((x) => h('li', {}, x))), h('div', { class: 'check' }, chk)))),
+      h('div', { class: 'jobs' }, ...JOBS.map(([e, b]) => { const [items, chk] = DETAIL[e]; return h('div', { class: 'job' }, h('em', {}, e), h('b', {}, b), h('ul', {}, ...items.map((x) => h('li', {}, x))), h('div', { class: 'check' }, chk)); })),
       panel('Why it matters', 'scale', h('p', { style: 'margin:0' }, 'Most of this work is the kind a lab would hand to several research assistants for a year: writing pipelines, cleaning tables, combing the literature. With Claude doing it under review, two people can run the full project part-time, and spend their own hours on the decisions only they can make.')));
   },
 
@@ -942,9 +943,4 @@ const start = fromHash >= 0 ? fromHash : (store.get('mot-step') ?? 0);
 render(start);
 if (start > 0) player.currentTime = TIMELINE.chapters[start].start + 0.05;
 kick();
-addEventListener('keydown', (e) => {
-  if (e.key !== ' ' || e.target.closest('input, select, textarea, button, summary')) return;
-  e.preventDefault();
-  player.paused ? player.play() : player.pause();
-});
 </script>
