@@ -45,4 +45,4 @@ note = "what this case is, in a few words"
 name = "case-study-b-reclassified"
 input = "lidar/tiles/*.laz"
 # bounds = [xmin, ymin, xmax, ymax]
-ground = "smrf"         # if the vendor's ground class cut a feature: compare with case-study-b
+ground = "smrf"         # if the vendor's ground class cut a feature: compare with case-study-a

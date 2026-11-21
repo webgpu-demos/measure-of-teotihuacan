@@ -144,10 +144,10 @@ def band(path):
     return a
 
 
-def read_raster(path, work=None):
+def read_raster(path):
     """Any GDAL raster (a GeoTIFF from this tool, say) -> 2D array, through a temporary ENVI copy."""
     import tempfile
-    with tempfile.TemporaryDirectory(dir=work) as d:
+    with tempfile.TemporaryDirectory() as d:
         bil = Path(d) / 'r.bil'
         sh(tool('gdal_translate'), '-q', '-of', 'ENVI', '-ot', 'Float64', path, bil)
         return next(iter(read_envi(bil).values()))
@@ -566,7 +566,7 @@ def cmd_run(a):
             raise SystemExit(f'no case named {a.only}')
     if a.dry_run:
         for c in cases:
-            print(json.dumps({k: v for k, v in c.items()}, indent=1))
+            print(json.dumps(c, indent=1))
         return
     out = Path(a.out or Path(a.cases).parent / 'surfaces')
     out.mkdir(parents=True, exist_ok=True)

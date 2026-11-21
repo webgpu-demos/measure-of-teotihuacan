@@ -16,21 +16,12 @@ import quanto  # noqa: E402
 from synth_cad import ORIGIN, Drafter, make_set  # noqa: E402
 
 
-def confirmed_map(drawings):
-    mapping = {}
-    for path in drawings:
-        _, geo = cm.read_drawing(path)
-        for layer in geo.layer_types:
-            mapping[layer] = {**cm.suggest(layer), 'confirmed': True}
-    return mapping
-
-
 @pytest.fixture(scope='module')
 def run(tmp_path_factory):
     tmp = tmp_path_factory.mktemp('drawings')
     truth = make_set(str(tmp), unit=0.83, seed=3)
     drawings = sorted(tmp.glob('*.dxf'))
-    records, summary = cm.extract(drawings, confirmed_map(drawings), tmp / 'out', quiet=True)
+    records, summary = cm.extract(drawings, cm.confirmed_map(drawings), tmp / 'out', quiet=True)
     return {'tmp': tmp, 'truth': truth, 'drawings': drawings, 'records': records, 'summary': summary}
 
 
@@ -184,7 +175,7 @@ def test_counting_every_record_invents_a_unit():
         with tempfile.TemporaryDirectory() as tmp:
             make_set(tmp, unit=None, seed=seed)
             drawings = sorted(Path(tmp).glob('*.dxf'))
-            records, _ = cm.extract(drawings, confirmed_map(drawings), Path(tmp) / 'out', quiet=True)
+            records, _ = cm.extract(drawings, cm.confirmed_map(drawings), Path(tmp) / 'out', quiet=True)
         everything = np.array([r['value_m'] for r in records if 1 <= r['value_m'] <= 40 and r['axis'] in 'uvz'
                                and r['condition'] not in ('hypothetical', 'eroded', 'restored')])
         qs = quanto.grid(0.5, 2.0, everything.max())
@@ -238,7 +229,7 @@ def site_drawing(path, gap=30.0, xref=False):
 def test_whole_site_drawing_is_split_into_structures(tmp_path):
     truth = site_drawing(tmp_path / 'site.dxf')
     drawings = [tmp_path / 'site.dxf']
-    mapping = confirmed_map(drawings)
+    mapping = cm.confirmed_map(drawings)
     split, s1 = cm.extract(drawings, mapping, tmp_path / 'split', quiet=True)
     whole, s0 = cm.extract(drawings, mapping, tmp_path / 'whole', quiet=True, join=0)
     gaps = lambda rs: [r['value_m'] for r in rs if r['kind'] == 'gap']
@@ -265,7 +256,7 @@ def test_whole_site_drawing_is_split_into_structures(tmp_path):
 def test_unbound_external_references_are_reported(tmp_path, capsys):
     site_drawing(tmp_path / 'site.dxf', xref=True)
     drawings = [tmp_path / 'site.dxf']
-    _, summary = cm.extract(drawings, confirmed_map(drawings), tmp_path / 'out')
+    _, summary = cm.extract(drawings, cm.confirmed_map(drawings), tmp_path / 'out')
     s = summary['drawings']['site.dxf']
     assert s['unbound_xrefs'] == 1 and not s['failed']
     assert 'external reference(s) NOT read (ANOTHER_STRUCTURE)' in capsys.readouterr().out
@@ -276,7 +267,7 @@ def test_stepped_platform_stays_one_structure(tmp_path, seed):
     """In plan, each tier of a stepped platform is a ring separated from the next by an empty terrace."""
     make_set(str(tmp_path), unit=None, seed=seed)
     drawings = sorted(tmp_path.glob('*.dxf'))
-    _, summary = cm.extract(drawings, confirmed_map(drawings), tmp_path / 'out', quiet=True)
+    _, summary = cm.extract(drawings, cm.confirmed_map(drawings), tmp_path / 'out', quiet=True)
     assert summary['drawings']['estructura_1.dxf']['structures']['count'] == 1
 
 

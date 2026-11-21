@@ -110,7 +110,8 @@ class Site:
 
     # The survey -------------------------------------------------------------------------------
     def survey(self, density=10.0, ground_through_canopy=0.35, sigma=0.03):
-        """Simulated returns: dict of arrays x, y, z, return_number, number_of_returns."""
+        """Simulated returns: dict of arrays x, y, z, return_number, number_of_returns, cls (the class a vendor
+        would give: 2, 5, 6 or 7)."""
         n = self.rng.poisson(density * self.size ** 2)
         x = self.rng.uniform(0, self.size, n)
         y = self.rng.uniform(0, self.size, n)

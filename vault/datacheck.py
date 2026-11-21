@@ -39,7 +39,7 @@ KINDS = [
 ]
 GEOKEY_FEET = {9002: 0.3048, 9003: 1200 / 3937}       # international foot, US survey foot
 SSD_SIZES_GB = (512, 1000, 2000, 4000, 8000)
-DERIVED_RASTERS = 6                                    # DTM, DSM, local relief, sky-view, hillshade, slope
+DERIVED_RASTERS = ('DTM', 'DSM', 'local relief', 'sky-view', 'hillshade', 'slope')
 GROUND_SHARE = 3                                       # rule of thumb: about 1 point in 3 is ground
 
 
@@ -200,19 +200,16 @@ def summarise_lidar(tiles):
          'las_bytes': sum(t['bytes'] for t in tiles if not t['compressed']),
          'laz_bytes': sum(t['bytes'] for t in tiles if t['compressed']),
          'copc_bytes': sum(t['bytes'] for t in tiles if t['copc'])}
-    areas, densities, in_degrees = [], [], 0
-    for t in tiles:
-        if t['unit_m'] is None or looks_like_degrees(t['bounds']):
-            in_degrees += 1
-            continue
+    measured = [t for t in tiles if t['unit_m'] is not None and not looks_like_degrees(t['bounds'])]
+    areas, densities = [], []
+    for t in measured:
         minx, maxx, miny, maxy = t['bounds'][:4]
         a = max(0.0, maxx - minx) * max(0.0, maxy - miny) * t['unit_m'] ** 2
         areas.append(a)
         if a > 0:
             densities.append(t['points'] / a)
-    s['in_degrees'] = in_degrees
+    s['in_degrees'] = len(tiles) - len(measured)
     s['area_m2'] = sum(areas)
-    measured = [t for t in tiles if t['unit_m'] is not None and not looks_like_degrees(t['bounds'])]
     s['density'] = sum(t['points'] for t in measured) / s['area_m2'] if s['area_m2'] else None
     s['first_density'] = sum(t['first_returns'] for t in measured) / s['area_m2'] if s['area_m2'] else None
     densities.sort()
@@ -233,7 +230,7 @@ def storage_estimate(total_bytes, lid):
     cell = None
     if lid['area_m2'] and lid['dem_cell_m']:
         cell = next((c for c in (0.25, 0.5, 1.0, 2.0) if c >= lid['dem_cell_m']), 2.0)
-        derived = lid['area_m2'] / cell ** 2 * 4 * DERIVED_RASTERS
+        derived = lid['area_m2'] / cell ** 2 * 4 * len(DERIVED_RASTERS)
     need = (total_bytes + copc_copy + derived) * 1.5
     ssd = next((s for s in SSD_SIZES_GB if s * 1e9 >= need), None)
     return {'copc_copy': copc_copy, 'derived': derived, 'cell': cell, 'need': need, 'ssd_gb': ssd}
@@ -285,8 +282,8 @@ def render(c):
     lines.append(f'  data as delivered:            {gb(total):>10,.1f} GB')
     lines.append(f"  compressed working copy:      {gb(est['copc_copy']):>10,.1f} GB  (lidar as COPC, if not already)")
     if est['cell']:
-        lines.append(f"  derived rasters:              {gb(est['derived']):>10,.1f} GB  ({DERIVED_RASTERS} rasters at "
-                     f"{est['cell']:g} m: DTM, DSM, local relief, sky-view, hillshade, slope)")
+        lines.append(f"  derived rasters:              {gb(est['derived']):>10,.1f} GB  ({len(DERIVED_RASTERS)} rasters at "
+                     f"{est['cell']:g} m: {', '.join(DERIVED_RASTERS)})")
     lines.append(f"  with half again for headroom: {gb(est['need']):>10,.1f} GB")
     lines.append('  suggested SSD: ' + (f"{est['ssd_gb'] // 1000} TB" if est['ssd_gb'] and est['ssd_gb'] >= 1000
                                          else f"{est['ssd_gb']} GB" if est['ssd_gb'] else 'more than 8 TB: plan external storage'))
