@@ -27,6 +27,10 @@ out/
 private/
 .pytest_cache/
 
+# Data check outputs (vault/datacheck.py): they describe the team's data and stay with it.
+manifest.csv
+specs.txt
+
 # Lidar surfaces (lidar/surface.py): point clouds, case-study settings and every output stay with the data.
 *.las
 *.LAS
